@@ -90,6 +90,11 @@ async def detect(alert: Alert):
         method = "transformer"
 
     return AnomalyResult(
+        timestamp        = alert.timestamp,
+        source_ip        = alert.source_ip,
+        dest_ip          = alert.dest_ip,
+        attack_type      = alert.alert_type,
+        confidence       = attack_prob,
         alert_id         = alert.alert_id,
         anomaly_score    = anomaly_score,
         is_anomalous     = is_anomalous,
