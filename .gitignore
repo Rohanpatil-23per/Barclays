@@ -1,0 +1,13 @@
+Dataset/
+master_dataset/
+models/
+*.csv
+*.pkl
+*.pth
+*.bin
+*.safetensors
+__pycache__/
+*.pyc
+.env
+notebooks/.ipynb_checkpoints/
+mlruns/
