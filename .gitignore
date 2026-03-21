@@ -13,4 +13,5 @@ notebooks/.ipynb_checkpoints/
 mlruns/
 team_datasets/
 scripts/
-team_datasets.zip/
+team_datasets.zip/*.zip
+team_datasets/
