@@ -1,0 +1,31 @@
+{
+  "initial_accuracy": 94.8151,
+  "phase1_accuracy": 72.9813,
+  "final_accuracy": 72.3648,
+  "cycles": [
+    {
+      "cycle": 1,
+      "accuracy_before": 72.9813,
+      "accuracy_after": 70.7612,
+      "improvement": -2.2201,
+      "best_train_acc": 71.6797,
+      "time_taken": 0.9
+    },
+    {
+      "cycle": 2,
+      "accuracy_before": 70.7612,
+      "accuracy_after": 72.4467,
+      "improvement": 1.6856,
+      "best_train_acc": 77.5391,
+      "time_taken": 0.9
+    },
+    {
+      "cycle": 3,
+      "accuracy_before": 72.4467,
+      "accuracy_after": 72.3648,
+      "improvement": -0.082,
+      "best_train_acc": 73.8281,
+      "time_taken": 0.9
+    }
+  ]
+}

@@ -1,0 +1,125 @@
+{
+  "initial_training": [
+    {
+      "epoch": 1,
+      "loss": 0.3779,
+      "train_acc": 79.23,
+      "test_acc": 84.19
+    },
+    {
+      "epoch": 2,
+      "loss": 0.2956,
+      "train_acc": 85.07,
+      "test_acc": 88.3
+    },
+    {
+      "epoch": 3,
+      "loss": 0.2561,
+      "train_acc": 88.04,
+      "test_acc": 89.73
+    },
+    {
+      "epoch": 4,
+      "loss": 0.233,
+      "train_acc": 89.45,
+      "test_acc": 90.52
+    },
+    {
+      "epoch": 5,
+      "loss": 0.2147,
+      "train_acc": 90.54,
+      "test_acc": 91.16
+    },
+    {
+      "epoch": 6,
+      "loss": 0.1979,
+      "train_acc": 91.64,
+      "test_acc": 92.73
+    },
+    {
+      "epoch": 7,
+      "loss": 0.1909,
+      "train_acc": 91.98,
+      "test_acc": 92.76
+    },
+    {
+      "epoch": 8,
+      "loss": 0.1878,
+      "train_acc": 92.17,
+      "test_acc": 94.18
+    },
+    {
+      "epoch": 9,
+      "loss": 0.1836,
+      "train_acc": 92.39,
+      "test_acc": 93.8
+    },
+    {
+      "epoch": 10,
+      "loss": 0.1809,
+      "train_acc": 92.61,
+      "test_acc": 94.38
+    },
+    {
+      "epoch": 11,
+      "loss": 0.175,
+      "train_acc": 92.94,
+      "test_acc": 94.26
+    },
+    {
+      "epoch": 12,
+      "loss": 0.1741,
+      "train_acc": 93.09,
+      "test_acc": 94.65
+    },
+    {
+      "epoch": 13,
+      "loss": 0.1694,
+      "train_acc": 93.22,
+      "test_acc": 94.36
+    },
+    {
+      "epoch": 14,
+      "loss": 0.1676,
+      "train_acc": 93.25,
+      "test_acc": 94.17
+    },
+    {
+      "epoch": 15,
+      "loss": 0.1671,
+      "train_acc": 93.43,
+      "test_acc": 94.54
+    },
+    {
+      "epoch": 16,
+      "loss": 0.1654,
+      "train_acc": 93.46,
+      "test_acc": 94.46
+    },
+    {
+      "epoch": 17,
+      "loss": 0.1618,
+      "train_acc": 93.62,
+      "test_acc": 94.62
+    },
+    {
+      "epoch": 18,
+      "loss": 0.1644,
+      "train_acc": 93.53,
+      "test_acc": 94.68
+    },
+    {
+      "epoch": 19,
+      "loss": 0.1625,
+      "train_acc": 93.61,
+      "test_acc": 94.76
+    },
+    {
+      "epoch": 20,
+      "loss": 0.1634,
+      "train_acc": 93.54,
+      "test_acc": 94.82
+    }
+  ],
+  "cycles": []
+}

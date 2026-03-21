@@ -1,0 +1,18 @@
+{
+  "total_blind_spots": 7062,
+  "sampled_for_mutation": 600,
+  "total_mutations": 30000,
+  "strategy_counts": {
+    "timing_variation": 6000,
+    "payload_obfuscation": 6000,
+    "evasion_noise": 6000,
+    "lateral_movement": 6000,
+    "tool_substitution": 6000
+  },
+  "attack_type_counts": {
+    "Analysis": 10000,
+    "Fuzzers": 10000,
+    "Shellcode": 10000
+  },
+  "time_seconds": 0.5
+}
