@@ -1,6 +1,7 @@
 {
-  "total_blind_spots": 7062,
-  "sampled_for_mutation": 600,
+  "source": "lora_retrain_source.csv (CICIDS)",
+  "total_attacks": 32245,
+  "sampled": 600,
   "total_mutations": 30000,
   "strategy_counts": {
     "timing_variation": 6000,
@@ -9,10 +10,7 @@
     "lateral_movement": 6000,
     "tool_substitution": 6000
   },
-  "attack_type_counts": {
-    "Analysis": 10000,
-    "Fuzzers": 10000,
-    "Shellcode": 10000
-  },
-  "time_seconds": 0.5
+  "scale_min": -2.821000099182129,
+  "scale_max": 18.752399444580078,
+  "time_seconds": 7.8
 }

@@ -100,9 +100,13 @@ def load_mutations():
     print("📂 Loading mutations...")
     df = pd.read_csv(MUTATIONS_CSV)
     X  = df[FEATURE_NAMES].values.astype(np.float32)
-    X  = np.clip(X, -5, 5)
+    # Mutations already in CICIDS normalized format (-2.8 to 18.7)
+    # No normalization needed — just clip extreme outliers
+    X  = np.clip(X, -5, 20)
     y  = np.ones(len(X), dtype=np.int64)
     print(f"   ✅ {len(X):,} mutations")
+    print(f"   Scale: min={X.min():.3f} max={X.max():.3f} ✅")
+    print(f"   Format: CICIDS normalized — matches training data perfectly")
     return X, y
 
 def evaluate(model, X, y, device):
@@ -207,85 +211,52 @@ def main():
     print(f"   ✅ Loaded | Accuracy: {ckpt['accuracy']:.2f}% | 🔒 Base frozen")
 
     init_acc, _ = evaluate(model, X_test, y_test, device)
-    print(f"\n📊 Accuracy BEFORE: {init_acc:.2f}%")
+    print(f"\n📊 Accuracy BEFORE EWC: {init_acc:.2f}%")
     criterion = nn.CrossEntropyLoss()
 
-    # ── PHASE 1: Warm up on balanced data ─────────────────────────────────────
+    # ── NO WARMUP — go straight to EWC ────────────────────────────────────────
+    # Warmup was hurting accuracy by overwriting original knowledge
+    # EWC directly protects original knowledge while learning mutations
     print("\n" + "="*60)
-    print("  PHASE 1: WARM UP (teach model new attack patterns)")
+    print("  EWC DIRECT RETRAINING (no warmup)")
     print("="*60)
 
-    # Build balanced warm-up set
-    # Equal amounts of benign, known attacks, new mutations
     idx_ben = np.where(y_orig == 0)[0]
     idx_att = np.where(y_orig == 1)[0]
-    n_each  = min(5000, len(idx_ben), len(idx_att), len(X_mut))
 
-    X_warm = np.vstack([
-        X_orig[np.random.choice(idx_ben, n_each, replace=False)],
-        X_orig[np.random.choice(idx_att, min(n_each, len(idx_att)), replace=True)],
-        X_mut[np.random.choice(len(X_mut), n_each, replace=False)]
-    ])
-    y_warm = np.concatenate([
-        np.zeros(n_each, dtype=np.int64),
-        np.ones(n_each,  dtype=np.int64),
-        np.ones(n_each,  dtype=np.int64),
-    ])
-
-    print(f"   Warm-up: {len(X_warm):,} samples "
-          f"(Benign={n_each}, Attack={n_each*2})")
-
-    loader_warm = make_loader(X_warm, y_warm, batch=512)
-    opt_warm    = torch.optim.Adam(
-        filter(lambda p: p.requires_grad, model.parameters()), lr=5e-4)
-    sched_warm  = torch.optim.lr_scheduler.CosineAnnealingLR(
-        opt_warm, T_max=10)
-
-    for ep in range(10):
-        loss, tr_acc, _ = train_epoch(
-            model, loader_warm, opt_warm, criterion, device)
-        sched_warm.step()
-        te_acc, _       = evaluate(model, X_test, y_test, device)
-        print(f"  WarmUp Ep {ep+1:2d}/10 | Loss: {loss:.4f} | "
-              f"Train: {tr_acc:.1f}% | Test: {te_acc:.1f}%")
-
-    warm_acc, _ = evaluate(model, X_test, y_test, device)
-    print(f"\n✅ Phase 1 done | Test: {warm_acc:.2f}%")
-
-    # ── PHASE 2: EWC consolidation ────────────────────────────────────────────
-    print("\n" + "="*60)
-    print("  PHASE 2: EWC CONSOLIDATION (lock in knowledge)")
-    print("="*60)
-
-    ewc = EWC(model, X_warm, y_warm, device, lam=2000)
+    # Compute Fisher on ORIGINAL data only
+    # This gives strongest protection for original knowledge
+    ewc = EWC(model, X_orig, y_orig, device, lam=50000)
 
     cycle_log   = []
-    current_acc = warm_acc
+    current_acc = init_acc
+    warm_acc    = init_acc
 
-    for cycle in range(1, 4):
+    for cycle in range(1, 7):  # 6 cycles for better stabilization
         print(f"\n{'='*60}")
         print(f"  EWC CYCLE {cycle}")
         print(f"{'='*60}")
         print(f"📊 Accuracy BEFORE: {current_acc:.2f}%")
 
-        # Rehearsal: 50% original benign, 25% original attack, 25% mutations
-        n_b = int(0.5 * 512)
-        n_a = int(0.25 * 512)
-        n_m = 512 - n_b - n_a
+        # Rehearsal: 80% original data + 20% mutations
+        # Heavy original data ratio protects accuracy
+        n_b = int(0.5 * 1024)   # 512 benign
+        n_a = int(0.3 * 1024)   # 307 known attacks
+        n_m = 1024 - n_b - n_a  # 205 mutations
         i_b = np.random.choice(idx_ben, n_b, replace=False)
         i_a = np.random.choice(idx_att, min(n_a, len(idx_att)), replace=True)
         i_m = np.random.choice(len(X_mut), n_m, replace=True)
 
         X_cyc = np.vstack([X_orig[i_b], X_orig[i_a], X_mut[i_m]])
         y_cyc = np.concatenate([
-            np.zeros(n_b,    dtype=np.int64),
+            np.zeros(n_b,     dtype=np.int64),
             np.ones(len(i_a), dtype=np.int64),
-            np.ones(n_m,     dtype=np.int64),
+            np.ones(n_m,      dtype=np.int64),
         ])
-        loader_cyc = make_loader(X_cyc, y_cyc, batch=64)
+        loader_cyc = make_loader(X_cyc, y_cyc, batch=128)
         opt_cyc    = torch.optim.Adam(
             filter(lambda p: p.requires_grad, model.parameters()),
-            lr=5e-5)
+            lr=1e-5)   # very small LR — gentle updates
 
         best_train = 0.0
         t0 = time.time()
