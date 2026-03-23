@@ -1,0 +1,59 @@
+INFO:     Started server process [64534]
+INFO:     Waiting for application startup.
+Loading models on cuda...
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 13918.00it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 14248.98it/s]
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+All models loaded ✅
+  CICIDS RoBERTa: models/roberta_layer1
+  UNSW RoBERTa:   models/roberta_unsw
+  Isolation Forest: loaded
+  FAISS GPU index: 20030 vectors
+  Kafka/Redis/ES:  connected
+INFO:     127.0.0.1:37976 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42442 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42442 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40436 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40436 - "GET /health HTTP/1.1" 200 OK
+/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/sklearn/utils/validation.py:2691: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+[Parallel(n_jobs=1)]: Done  49 tasks      | elapsed:    0.0s
+[Parallel(n_jobs=1)]: Done 199 tasks      | elapsed:    0.0s
+[Parallel(n_jobs=1)]: Done 200 out of 200 | elapsed:    0.0s finished
+/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/sklearn/utils/validation.py:2691: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+INFO:     127.0.0.1:40436 - "POST /detect HTTP/1.1" 200 OK
+/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/sklearn/utils/validation.py:2691: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+[Parallel(n_jobs=1)]: Done  49 tasks      | elapsed:    0.0s
+[Parallel(n_jobs=1)]: Done 199 tasks      | elapsed:    0.0s
+[Parallel(n_jobs=1)]: Done 200 out of 200 | elapsed:    0.0s finished
+/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/sklearn/utils/validation.py:2691: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+INFO:     127.0.0.1:40436 - "POST /detect HTTP/1.1" 200 OK
+/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/sklearn/utils/validation.py:2691: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+[Parallel(n_jobs=1)]: Done  49 tasks      | elapsed:    0.0s
+[Parallel(n_jobs=1)]: Done 199 tasks      | elapsed:    0.0s
+[Parallel(n_jobs=1)]: Done 200 out of 200 | elapsed:    0.0s finished
+/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/sklearn/utils/validation.py:2691: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+INFO:     127.0.0.1:60354 - "POST /detect HTTP/1.1" 200 OK
+/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/sklearn/utils/validation.py:2691: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+[Parallel(n_jobs=1)]: Done  49 tasks      | elapsed:    0.0s
+[Parallel(n_jobs=1)]: Done 199 tasks      | elapsed:    0.0s
+[Parallel(n_jobs=1)]: Done 200 out of 200 | elapsed:    0.0s finished
+/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/sklearn/utils/validation.py:2691: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+INFO:     127.0.0.1:60360 - "POST /detect HTTP/1.1" 200 OK
+/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/sklearn/utils/validation.py:2691: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+[Parallel(n_jobs=1)]: Done  49 tasks      | elapsed:    0.0s
+[Parallel(n_jobs=1)]: Done 199 tasks      | elapsed:    0.0s
+[Parallel(n_jobs=1)]: Done 200 out of 200 | elapsed:    0.0s finished
+/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/sklearn/utils/validation.py:2691: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+INFO:     127.0.0.1:34614 - "POST /detect HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34614 - "POST /generate-playbook HTTP/1.1" 200 OK

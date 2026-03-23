@@ -53,7 +53,7 @@ class IMMUNEXElastic:
         result = self.es.search(
             index=INDICES["incidents"],
             query={"match": {"attack_type": attack_type}},
-            sort=[{"@timestamp": "desc"}],
+            sort=[{"@timestamp": {"order": "desc", "unmapped_type": "date"}}],
             size=limit
         )
         return [h["_source"] for h in result["hits"]["hits"]]
@@ -62,7 +62,7 @@ class IMMUNEXElastic:
         result = self.es.search(
             index=INDICES["alerts"],
             query={"range": {"@timestamp": {"gte": f"now-{minutes}m"}}},
-            sort=[{"@timestamp": "desc"}],
+            sort=[{"@timestamp": {"order": "desc", "unmapped_type": "date"}}],
             size=limit
         )
         return [h["_source"] for h in result["hits"]["hits"]]

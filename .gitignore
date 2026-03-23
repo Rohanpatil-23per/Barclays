@@ -15,3 +15,6 @@ team_datasets/
 scripts/
 team_datasets.zip/*.zip
 team_datasets/
+*.zip
+master_dataset/
+team_datasets/

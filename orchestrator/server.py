@@ -1,0 +1,282 @@
+import sys, os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+import json, uuid, asyncio, logging
+from datetime import datetime
+from contextlib import asynccontextmanager
+from typing import Optional
+
+import httpx
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+
+from shared.schemas import Alert, AnomalyResult, AttackGraph, ResponseAction, Playbook
+from shared.kafka_client import IMMUNEXProducer
+from shared.redis_client import IMMUNEXCache
+from shared.es_client import IMMUNEXElastic
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("orchestrator")
+
+LAYERS = {
+    1: os.getenv("LAYER1_URL", "http://localhost:8001"),
+    2: os.getenv("LAYER2_URL", "http://localhost:8002"),
+    3: os.getenv("LAYER3_URL", "http://localhost:8003"),
+    4: os.getenv("LAYER4_URL", "http://localhost:8004"),
+    5: os.getenv("LAYER5_URL", "http://localhost:8005"),
+}
+TIMEOUT = 30.0
+
+state = {}
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    state["kafka"] = IMMUNEXProducer()
+    state["redis"] = IMMUNEXCache()
+    state["es"]    = IMMUNEXElastic()
+    state["http"]  = httpx.AsyncClient(timeout=TIMEOUT)
+    logger.info("Orchestrator started")
+    logger.info(f"Layer endpoints: {LAYERS}")
+    yield
+    await state["http"].aclose()
+    state["kafka"].close()
+    logger.info("Orchestrator shutdown")
+
+app = FastAPI(title="IMMUNEX Orchestrator", version="1.0", lifespan=lifespan)
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+
+async def call_layer(layer_num: int, endpoint: str, payload: dict) -> Optional[dict]:
+    url = f"{LAYERS[layer_num]}{endpoint}"
+    try:
+        r = await state["http"].post(url, json=payload)
+        r.raise_for_status()
+        logger.info(f"Layer {layer_num} {endpoint}: OK")
+        return r.json()
+    except httpx.ConnectError:
+        logger.warning(f"Layer {layer_num} OFFLINE — skipping {endpoint}")
+        return None
+    except httpx.TimeoutException:
+        logger.warning(f"Layer {layer_num} TIMEOUT — skipping {endpoint}")
+        return None
+    except Exception as e:
+        logger.error(f"Layer {layer_num} ERROR: {e}")
+        return None
+
+async def check_layer_health(layer_num: int) -> bool:
+    url = f"{LAYERS[layer_num]}/health"
+    try:
+        r = await state["http"].get(url, timeout=3.0)
+        return r.status_code == 200
+    except:
+        return False
+
+@app.get("/health")
+async def health():
+    layer_status = {}
+    for num in LAYERS:
+        layer_status[f"layer{num}"] = await check_layer_health(num)
+    return {
+        "status":     "ok",
+        "service":    "orchestrator",
+        "port":       8000,
+        "layers":     layer_status,
+        "all_online": all(layer_status.values()),
+    }
+
+@app.post("/pipeline/run")
+async def run_pipeline(alert: Alert):
+    pipeline_id = str(uuid.uuid4())
+    started_at  = datetime.utcnow().isoformat()
+    result = {
+        "pipeline_id":  pipeline_id,
+        "alert_id":     alert.alert_id,
+        "started_at":   started_at,
+        "layer1":       None,
+        "layer2":       None,
+        "layer3":       None,
+        "layer4":       None,
+        "layer5":       None,
+        "final_action": None,
+        "playbook":     None,
+    }
+
+    # Layer 1: Detection
+    l1 = await call_layer(1, "/detect", alert.dict())
+    result["layer1"] = l1
+    if not l1:
+        result["error"] = "Layer 1 offline — cannot proceed"
+        return result
+
+    if not l1.get("is_anomalous", False):
+        result["verdict"]       = "BENIGN"
+        result["anomaly_score"] = l1.get("anomaly_score", 0)
+        _log_to_es(result, alert)
+        return result
+
+    result["verdict"]       = "ANOMALOUS"
+    result["anomaly_score"] = l1.get("anomaly_score", 0)
+
+    # Layer 2 + 4 in parallel
+    l2_payload = {
+        "alert_id":         l1["alert_id"],
+        "timestamp":        l1["timestamp"],
+        "source_ip":        l1["source_ip"],
+        "dest_ip":          l1["dest_ip"],
+        "attack_type":      l1["attack_type"],
+        "anomaly_score":    l1["anomaly_score"],
+        "is_anomalous":     l1["is_anomalous"],
+        "embedding":        l1["embedding"],
+        "detection_method": l1["detection_method"],
+        "confidence":       l1["confidence"],
+    }
+    l4_payload = l2_payload.copy()
+
+    l2, l4 = await asyncio.gather(
+        call_layer(2, "/correlate", l2_payload),
+        call_layer(4, "/immunize",  l4_payload),
+    )
+    result["layer2"] = l2
+    result["layer4"] = l4
+
+    # Layer 3: Response (needs Layer 2 output)
+    if l2:
+        l3_payload = {
+            "chain_id":             l2.get("chain_id", str(uuid.uuid4())),
+            "nodes":                l2.get("nodes", []),
+            "edges":                l2.get("edges", []),
+            "predicted_next_stage": l2.get("predicted_next_stage", "unknown"),
+            "confidence":           l2.get("confidence", 0.5),
+        }
+        l3 = await call_layer(3, "/respond", l3_payload)
+        result["layer3"]       = l3
+        result["final_action"] = l3
+    else:
+        result["layer3"]       = None
+        result["final_action"] = {
+            "chain_id":      pipeline_id,
+            "action":        "monitor",
+            "target_ip":     alert.source_ip,
+            "verified_safe": True,
+            "q_value":       0.5,
+            "fallback":      True,
+        }
+        logger.warning("Layer 2 offline — using fallback response action")
+
+    # Layer 5: Explain + Playbook
+    l5_payload = result["final_action"] or {
+        "chain_id":      pipeline_id,
+        "action":        "monitor",
+        "target_ip":     alert.source_ip,
+        "verified_safe": True,
+        "q_value":       0.5,
+    }
+    l5 = await call_layer(5, "/explain", l5_payload)
+    result["layer5"] = l5
+
+    if not l5:
+        logger.warning("Layer 5 offline — generating playbook from Layer 1 Ollama")
+        try:
+            ollama_r = await state["http"].post(
+                f"{LAYERS[1]}/generate-playbook",
+                json={
+                    "prompt": "Generate a 3-step incident response playbook.",
+                    "context": {
+                        "attack_type":   l1.get("attack_type"),
+                        "source_ip":     l1.get("source_ip"),
+                        "anomaly_score": l1.get("anomaly_score"),
+                        "method":        l1.get("detection_method"),
+                    }
+                },
+                timeout=60.0
+            )
+            playbook_text = ollama_r.json().get("response", "")
+            result["playbook"] = {
+                "incident_id":    pipeline_id,
+                "attack_summary": f"{l1.get('attack_type')} from {l1.get('source_ip')}",
+                "steps":          [playbook_text],
+                "predicted_next": "unknown",
+                "confidence":     0.5,
+                "source":         "layer1_ollama_fallback",
+            }
+        except Exception as e:
+            logger.error(f"Playbook fallback failed: {e}")
+    else:
+        result["playbook"] = l5
+
+    state["kafka"].send("playbooks", {
+        "pipeline_id":   pipeline_id,
+        "alert_id":      alert.alert_id,
+        "verdict":       result["verdict"],
+        "anomaly_score": result["anomaly_score"],
+        "action":        result.get("final_action", {}).get("action", "unknown"),
+        "timestamp":     started_at,
+    })
+
+    state["redis"].publish("immunex_pipeline", {
+        "pipeline_id":   pipeline_id,
+        "alert_id":      alert.alert_id,
+        "verdict":       result["verdict"],
+        "anomaly_score": result["anomaly_score"],
+        "layers_online": {
+            "l1": l1 is not None,
+            "l2": l2 is not None,
+            "l3": result["layer3"] is not None,
+            "l4": l4 is not None,
+            "l5": l5 is not None,
+        }
+    })
+
+    _log_to_es(result, alert)
+    result["completed_at"] = datetime.utcnow().isoformat()
+    return result
+
+@app.post("/demo/inject")
+async def demo_inject():
+    """Inject a realistic Zeus Banking Trojan alert for demo day."""
+    botnet_features = [-0.7646905574813246, 1.8493171336719367, 0.1360842597127493, -0.038256832829822, -0.2234762935258288, 0.1867425617760749, -0.2887230032189737, -0.3338156024101207, -0.3094501517292162, -0.243075338744169, 4.544640932295218, -0.6642257447173439, 3.1770112733598714, 4.633082888390731, -0.1770146168201649, -0.1587662528427847, 1.1936840927012191, 2.3922403065334, 2.765064551509225, -0.0582008046198575, 1.862034595775524, 0.8855807278018033, 2.6763375243600733, 2.762514242871944, -0.1243816297992087, -0.3613781146589914, -0.2127801830691396, -0.2475923127532377, -0.2842236442106687, -0.122538486443635, -0.1890309835329326, 0.0, 0.0, 0.0, 0.0373291387560878, -0.0817210922126444, -0.1349697802794396, -0.205328179738589, -0.7746180708204594, 4.332156577732468, 2.060003453281091, 3.636782569436395, 3.947944798307136, -0.1742105834718708, -0.1890309835329326, 0.0, -0.5689403351968044, 1.6932962780256324, -0.2973405807608872, 0.0, 0.0, -1.1283890896284317, 2.027611601794204, -0.3094501517292162, 3.1770112733598714, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1360842597127493, -0.2234762935258288, -0.038256832829822, 0.1867425617760749, -0.4425389824504542, -0.2020681797073581, 0.3430337318398583, -0.8167862912590615, 0.4715044104583414, -0.1382837801439019, 0.2060428820616336, 0.5834133109605503, 2.897013722170425, -0.1150629802833818, 2.7933872433630125, 2.946668070457503]
+    demo_alert = Alert(
+        alert_id   = f"DEMO-{uuid.uuid4().hex[:8].upper()}",
+        timestamp  = datetime.utcnow().isoformat(),
+        source_ip  = "203.0.113.99",
+        dest_ip    = "192.168.10.50",
+        alert_type = "Zeus_Banking_Trojan",
+        severity   = 0.95,
+        features   = botnet_features,
+    )
+    result = await run_pipeline(demo_alert)
+    result["demo"] = True
+    return result
+
+@app.get("/pipeline/status")
+async def pipeline_status():
+    layer_status = {}
+    for num in LAYERS:
+        layer_status[num] = await check_layer_health(num)
+    online  = [n for n, up in layer_status.items() if up]
+    offline = [n for n, up in layer_status.items() if not up]
+    return {
+        "online":          online,
+        "offline":         offline,
+        "ready":           len(online) == 5,
+        "layer1_critical": layer_status.get(1, False),
+    }
+
+def _log_to_es(result: dict, alert: Alert):
+    try:
+        state["es"].index_incident({
+            "pipeline_id":   result.get("pipeline_id"),
+            "alert_id":      alert.alert_id,
+            "source_ip":     alert.source_ip,
+            "dest_ip":       alert.dest_ip,
+            "attack_type":   alert.alert_type,
+            "verdict":       result.get("verdict", "unknown"),
+            "anomaly_score": result.get("anomaly_score", 0),
+            "layers_ran":    [k for k in ["layer1","layer2","layer3","layer4","layer5"]
+                              if result.get(k) is not None],
+        })
+    except Exception as e:
+        logger.error(f"ES log failed: {e}")
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("orchestrator.server:app", host="0.0.0.0", port=8000, reload=False)
