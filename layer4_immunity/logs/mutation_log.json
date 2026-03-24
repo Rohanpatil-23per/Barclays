@@ -1,0 +1,16 @@
+{
+  "source": "lora_retrain_source.csv (CICIDS)",
+  "total_attacks": 32245,
+  "sampled": 600,
+  "total_mutations": 30000,
+  "strategy_counts": {
+    "timing_variation": 6000,
+    "payload_obfuscation": 6000,
+    "evasion_noise": 6000,
+    "lateral_movement": 6000,
+    "tool_substitution": 6000
+  },
+  "scale_min": -2.821000099182129,
+  "scale_max": 18.752399444580078,
+  "time_seconds": 7.8
+}
