@@ -57,3 +57,7 @@ INFO:     127.0.0.1:60360 - "POST /detect HTTP/1.1" 200 OK
   warnings.warn(
 INFO:     127.0.0.1:34614 - "POST /detect HTTP/1.1" 200 OK
 INFO:     127.0.0.1:34614 - "POST /generate-playbook HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [64534]

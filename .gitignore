@@ -18,3 +18,5 @@ team_datasets/
 *.zip
 master_dataset/
 team_datasets/
+logs/
+*.log
