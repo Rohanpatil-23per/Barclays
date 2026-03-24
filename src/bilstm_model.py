@@ -443,8 +443,8 @@ if __name__ == "__main__":
     # ── Load dataset ──────────────────────────────────────────
     print("Loading BiLSTM dataset...")
     BILSTM_FILE = (
-        'data/raw/new_dataset/team_datasets/'
-        'person2_layer2/bilstm_cicids.csv'
+    'data/raw/new_dataset/team_datasets/'
+    'person2_layer2/bilstm_cicids_augmented.csv'
     )
 
     df = pd.read_csv(BILSTM_FILE)
