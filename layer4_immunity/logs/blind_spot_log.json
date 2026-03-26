@@ -1,11 +1,11 @@
 {
   "total_candidates": 7117,
-  "correctly_detected": 55,
-  "blind_spots_found": 7062,
-  "detection_rate": 0.77,
+  "correctly_detected": 0,
+  "blind_spots_found": 7117,
+  "detection_rate": 0.0,
   "blind_spot_types": {
-    "Fuzzers": 6039,
-    "Analysis": 645,
+    "Fuzzers": 6062,
+    "Analysis": 677,
     "Shellcode": 378
   }
 }
