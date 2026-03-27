@@ -46,8 +46,13 @@ def _call_ollama_sync(prompt: str) -> str | None:
     try:
         host   = os.environ.get("IMMUNEX_OLLAMA_HOST", "http://localhost:11434")
         client = ollama_client.Client(host=host)
+        model_name = os.environ.get("IMMUNEX_OLLAMA_MODEL", "llama3:8b-instruct-q4_0")
         response = client.chat(
+<<<<<<< HEAD
             model    = "llama3",
+=======
+            model    = model_name,
+>>>>>>> origin/purva
             messages = [
                 {
                     "role":    "system",
@@ -81,7 +86,8 @@ async def generate_llm_reasoning(
     Returns
     -------
     dict with keys: reason, risk (LOW/MEDIUM/HIGH), business_impact,
-    alternative (action name string for the fallback action).
+    alternative (action name string for the fallback action),
+    auto_approved (bool), human_reviewed (bool).  [IMMUNEX-PATCH] Bug 12
     """
     prompt = f"""You are a cybersecurity expert.
 Given:
@@ -98,6 +104,7 @@ Explain:
 
 Respond ONLY in JSON with EXACT keys: "reason", "risk", "business_impact", "alternative"."""
 
+    # [IMMUNEX-PATCH] Bug 12: include auto_approved and human_reviewed in fallback
     _fallback: dict = {
         "reason":          "LLM unavailable — proceeding with default risk classification",
         "risk":            "MEDIUM",
@@ -144,6 +151,14 @@ Respond ONLY in JSON with EXACT keys: "reason", "risk", "business_impact", "alte
         for key, default_val in _fallback.items():
             if key not in parsed:
                 parsed[key] = default_val
+<<<<<<< HEAD
+=======
+
+        # [IMMUNEX-PATCH] Bug 12: always overwrite with caller-supplied booleans
+        # even if the LLM happened to emit these fields in its JSON response.
+        parsed["auto_approved"]  = auto_approved
+        parsed["human_reviewed"] = human_reviewed
+>>>>>>> origin/purva
 
         return parsed
 

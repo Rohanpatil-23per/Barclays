@@ -1,6 +1,12 @@
 """
 Layer 3 - Immune Response Engine
 Loads the Dueling DQN model and outputs structured ActionDecisions.
+
+[IMMUNEX-PATCH] Step 2 refactoring applied:
+  Bug 1 — strict 128-dim feature_vector parse; zero-vector fallback (no random)
+  Bug 2 — secondary actions only within 10 % of primary Q-value (argmax)
+  Bug 3 — filter_conflicting_actions: do_nothing short-circuit + category dedup
+  Rejection memory — async _check_rejection_memory via database.is_action_rejected
 """
 
 import os
@@ -35,39 +41,66 @@ def is_high_impact(actions: list[int], alert: dict) -> str:
     severity = alert.get("severity", "low").lower()
     if severity in ("critical", "high"):
         return "high"
-    
     # Check if any action is typically high impact (network/process/data containment)
     for act in actions:
         cat = get_action_category(act)
         if cat in ("network", "process", "data_protection"):
             return "high"
-            
+
     return "medium" if severity == "medium" else "low"
+
+
+# Pairs of action indices that must never execute together because they target
+# the same resource and would create a destructive cascade or logical contradiction.
+# (block_source_ip + null_route_attacker both null the same IP via different APIs)
+# (rollback_filesystem_changes + restore_from_clean_snapshot both touch snapshots)
+# (kill_malicious_process + suspend_suspicious_process target the same PID)
+# (disable_compromised_account + lock_privileged_account target the same account)
+_MUTUALLY_EXCLUSIVE_PAIRS: frozenset[frozenset] = frozenset({
+    frozenset({10, 18}),   # block_source_ip  ↔  null_route_attacker
+    frozenset({33, 34}),   # rollback_filesystem_changes  ↔  restore_from_clean_snapshot
+    frozenset({30, 31}),   # kill_malicious_process  ↔  suspend_suspicious_process
+    frozenset({22, 28}),   # disable_compromised_account  ↔  lock_privileged_account
+})
 
 
 def filter_conflicting_actions(actions: list[int]) -> list[int]:
     """
     Removes duplicate and mutually exclusive actions, preserving DQN ranking.
-    Keeps the highest-priority actions.
+
+    Rules (applied in order):
+    1. If do_nothing (0) is anywhere in the list → return [0] immediately.
+       do_nothing is semantically incompatible with any active response.
+    2. Drop exact duplicates (keep first occurrence, i.e. highest Q-value).
+    3. Drop the lower-ranked action in any MUTUALLY_EXCLUSIVE_PAIRS hit.
+       (Category-level dedup is intentionally removed — two network actions
+        that target different resources, e.g. block_source_ip + block_c2_domain,
+        are both valid and should both execute.)
     """
-    filtered = []
-    seen = set()
-    
+    # Rule 1: do_nothing short-circuit
+    if 0 in actions:
+        return [0]
+
+    filtered: list[int] = []
+    seen_ids: set[int] = set()
+
     for act in actions:
-        if act in seen:
+        # Rule 2: exact duplicate
+        if act in seen_ids:
             continue
-            
-        # Basic conflict rule 1: Do not mix 'do_nothing' (assumed index 0) with active interventions.
-        if act == 0 and len(filtered) > 0:
+
+        # Rule 3: mutually exclusive pair — if any already-selected action
+        # conflicts with this one, skip it (the earlier/higher-ranked one wins).
+        conflict = any(
+            frozenset({act, selected}) in _MUTUALLY_EXCLUSIVE_PAIRS
+            for selected in filtered
+        )
+        if conflict:
             continue
-        if 0 in filtered:
-            continue
-            
-        # Additional mutually exclusive constraints can be mapped here using ACTION_NAMES.
-        
+
         filtered.append(act)
-        seen.add(act)
-        
+        seen_ids.add(act)
+
     return filtered
 
 
@@ -150,25 +183,46 @@ class ResponseEngine:
 
     # ── Inference ──────────────────────────────────────────────────────────
 
-    def predict(self, alert: dict) -> ActionDecision:
+    # [IMMUNEX-PATCH] Bug 1 + Rejection memory: predict() is now async so it
+    # can await the database rejection-memory check via asyncpg.
+    async def predict(self, alert: dict) -> "ActionDecision":
         """
         Runs inference on a Layer 2 alert dict.
 
-        Extracts the feature vector, runs the DQN, and returns a
-        fully-populated ActionDecision.
+        [IMMUNEX-PATCH] Bug 1: strictly parses the 128-dim feature_vector from
+        the incoming payload. Falls back to np.zeros(128) — never np.random.rand
+        — so the model always receives a deterministic safe input on bad data.
+
+        [IMMUNEX-PATCH] Bug 2: secondary actions are only included if their
+        Q-value is within 10 % of the primary (argmax) action's Q-value.
+
+        [IMMUNEX-PATCH] Rejection memory: before finalising, each candidate
+        action is checked against the rejected_demonstrations table.  If a
+        near-identical state previously triggered a rejection for this action,
+        it is dropped and the next-highest Q-value is tried instead.
         """
         alert_id = alert.get("alert_id", str(uuid.uuid4()))
 
-        try:
-            obs = self.validate_feature_vector(alert.get("feature_vector", []))
-        except ValueError as exc:
-            self.logger.error("invalid_feature_vector",
-                              alert_id=alert_id, error=str(exc))
-            raise
+        # [IMMUNEX-PATCH] Bug 1: strict feature_vector parse; zero-vector fallback
+        raw_fv = alert.get("feature_vector")
+        if not raw_fv or len(raw_fv) != 128:
+            self.logger.warning(
+                "feature_vector_missing_or_wrong_size",
+                alert_id=alert_id,
+                got_len=len(raw_fv) if raw_fv else 0,
+                action="using_zero_vector_fallback",
+            )
+            obs = np.zeros(128, dtype=np.float32)  # [IMMUNEX-PATCH] Bug 1: zero-vector, NOT random
+        else:
+            try:
+                obs = self.validate_feature_vector(raw_fv)
+            except ValueError as exc:
+                self.logger.error("invalid_feature_vector", alert_id=alert_id, error=str(exc))
+                # [IMMUNEX-PATCH] Bug 1: fallback to zeros instead of raising or random
+                self.logger.warning("falling_back_to_zero_vector", alert_id=alert_id)
+                obs = np.zeros(128, dtype=np.float32)
 
         # ── Raw Q-values for explainability ───────────────────────────────
-        # SB3 wraps the network inside policy.q_net — NOT model.q_net directly.
-        # Using policy.q_net(obs_tensor) is the correct path in SB3 >= 1.6.
         raw_q_values: list[float] | None = None
         try:
             with torch.no_grad():
@@ -182,35 +236,75 @@ class ResponseEngine:
                 q_values = self.model.policy.q_net(obs_tensor)
                 raw_q_values = q_values.cpu().numpy()[0].tolist()
         except Exception as exc:
-            # Q-value extraction is optional — don't abort if it fails
-            self.logger.warning("q_value_extraction_failed",
-                                alert_id=alert_id, error=str(exc))
+            self.logger.warning("q_value_extraction_failed", alert_id=alert_id, error=str(exc))
 
-        # ── Multi-action selection ─────────────────────────────────────────
+        # ── [IMMUNEX-PATCH] Bug 2: Mathematically sound multi-action selection ─
+        # 1. argmax is the undisputed primary action.
+        # 2. A secondary action is only included if its Q-value is >= 90 % of
+        #    the primary's Q-value (i.e., within 10 % of the primary).
+        # This avoids blindly promoting low-confidence second choices.
         if raw_q_values is not None:
-            k = 3  # Select top 3 actions
-            # argsort returns ascending, so take last k and reverse
-            top_indices = np.argsort(raw_q_values)[-k:][::-1].tolist()
-        else:
-            # Fallback if Q-value extraction failed
-            action_index, _ = self.model.predict(obs, deterministic=True)
-            top_indices = [int(action_index)]
+            q_arr = np.array(raw_q_values)
+            primary_idx  = int(np.argmax(q_arr))            # [IMMUNEX-PATCH] Bug 2: true argmax
+            primary_qval = q_arr[primary_idx]
+            threshold    = primary_qval * 0.90              # [IMMUNEX-PATCH] Bug 2: 10 % window
 
-        # Filter duplicates and conflicts, maintaining DQN ranking
-        actions = filter_conflicting_actions(top_indices)
-        
+            # Build candidates: primary first, then secondaries meeting threshold
+            candidates = [primary_idx]
+            # argsort ascending → take all except the last (primary), reverse for descending
+            sorted_indices = np.argsort(q_arr)[:-1][::-1].tolist()
+            for idx in sorted_indices:
+                if idx == primary_idx:
+                    continue
+                if q_arr[idx] >= threshold:               # [IMMUNEX-PATCH] Bug 2: threshold check
+                    candidates.append(idx)
+                else:
+                    break  # sorted descending, so all remaining are below threshold
+        else:
+            # Fallback: model.predict deterministic action
+            action_index, _ = self.model.predict(obs, deterministic=True)
+            candidates = [int(action_index)]
+
+        # ── [IMMUNEX-PATCH] Rejection memory: drop candidates rejected before ─
+        # Import here to avoid circular imports at module level; the database
+        # module is only needed for the async lookup, not for class definition.
+        from response_engine.database import is_action_rejected
+
+        state_vec_list = obs.tolist()
+        filtered_candidates: list[int] = []
+        for candidate in candidates:
+            rejected = await is_action_rejected(state_vec_list, candidate)
+            if rejected:
+                self.logger.info(
+                    "candidate_dropped_by_rejection_memory",
+                    alert_id=alert_id,
+                    candidate_action=candidate,
+                )
+            else:
+                filtered_candidates.append(candidate)
+
+        # If ALL candidates were rejected, fall back to do_nothing (action 0)
+        if not filtered_candidates:
+            self.logger.warning(
+                "all_candidates_rejected_fallback_do_nothing",
+                alert_id=alert_id,
+            )
+            filtered_candidates = [0]
+
+        # ── Apply conflict filter ──────────────────────────────────────────
+        actions = filter_conflicting_actions(filtered_candidates)  # [IMMUNEX-PATCH] Bug 3
         if not actions:
-            actions = [top_indices[0]]
+            actions = [filtered_candidates[0]]
 
         primary_action = actions[0] if actions else 0
-        action_name = ACTION_NAMES.get(primary_action, "unknown_action")
-        
-        action_names = [ACTION_NAMES.get(idx, "unknown_action") for idx in actions]
+        action_name    = ACTION_NAMES.get(primary_action, "unknown_action")
+
+        action_names      = [ACTION_NAMES.get(idx, "unknown_action") for idx in actions]
         action_categories = [get_action_category(idx) for idx in actions]
-        
+
         confidence = float(alert.get("layer2_confidence", 0.0))
-        uncertain = confidence < 0.6
-        impact = is_high_impact(actions, alert)
+        uncertain  = confidence < 0.6
+        impact     = is_high_impact(actions, alert)
 
         decision = ActionDecision(
             alert_id          = alert_id,
@@ -246,6 +340,7 @@ class ResponseEngine:
 
 if __name__ == "__main__":
     import sys
+    import asyncio
 
     # Resolve model path relative to this file, then fall back to project root
     _here       = os.path.dirname(os.path.abspath(__file__))
@@ -263,7 +358,7 @@ if __name__ == "__main__":
 
     engine = ResponseEngine(model_path=_model_path)
 
-    # np.random.rand produces float64 — validate_feature_vector casts to float32
+    # [IMMUNEX-PATCH] Bug 1 smoke test: feature_vector from alert payload, not random
     _test_alert = {
         "alert_id"          : str(uuid.uuid4()),
         "timestamp"         : datetime.utcnow().isoformat() + "Z",
@@ -274,12 +369,12 @@ if __name__ == "__main__":
         "protocol"          : "TCP",
         "severity"          : "high",
         "attack_type"       : "C2_Beacon",
-        "feature_vector"    : np.random.rand(128).tolist(),
+        "feature_vector"    : [0.5] * 128,   # [IMMUNEX-PATCH] deterministic, not random
         "layer2_confidence" : 0.95,
     }
 
     print("\nRunning smoke test …")
-    _decision = engine.predict(_test_alert)
+    _decision = asyncio.run(engine.predict(_test_alert))
     print("\n--- ActionDecision ---")
     print(json.dumps(asdict(_decision), indent=2))
     print("\n[OK] response_engine.py smoke test passed.")
