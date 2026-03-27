@@ -25,7 +25,7 @@ import uvicorn
 BASE_DIR   = os.path.dirname(os.path.abspath(__file__))
 MODEL_DIR  = os.path.join(BASE_DIR, "models")
 LOG_DIR    = os.path.join(BASE_DIR, "logs")
-MODEL_PATH = os.path.join(MODEL_DIR, "lora_model.pt")   # primary 94.82%
+MODEL_PATH = os.path.join(MODEL_DIR, "lora_model_ewc.pt")   # primary 94.82%
 STATUS_LOG = os.path.join(LOG_DIR,   "server_status.json")
 
 os.makedirs(LOG_DIR, exist_ok=True)
@@ -54,7 +54,7 @@ class LoRALayer(nn.Module):
         return self.base(x) + self.lora_B(self.lora_A(x))
 
 class IMMUNEXLayer4(nn.Module):
-    def __init__(self, input_dim=25):
+    def __init__(self, input_dim=25, rank=8):
         super().__init__()
         self.base_encoder = nn.Sequential(
             nn.Linear(input_dim, 128), nn.BatchNorm1d(128),
@@ -62,12 +62,12 @@ class IMMUNEXLayer4(nn.Module):
             nn.Linear(128, 64), nn.BatchNorm1d(64),
             nn.ReLU(), nn.Dropout(0.2),
         )
-        self.lora_head = nn.Sequential(
-            LoRALayer(64, 32, rank=8), nn.ReLU(),
-            nn.Dropout(0.1), nn.Linear(32, 2)
+        self.lora_layer = LoRALayer(64, 32, rank=rank)
+        self.head = nn.Sequential(
+            nn.ReLU(), nn.Dropout(0.1), nn.Linear(32, 2)
         )
     def forward(self, x):
-        return self.lora_head(self.base_encoder(x))
+        return self.head(self.lora_layer(self.base_encoder(x)))
 
 # ─── Request/Response schemas ──────────────────────────────────────────────────
 class TrafficSample(BaseModel):
@@ -140,7 +140,8 @@ class ModelManager:
         ckpt        = torch.load(MODEL_PATH,
                                  map_location=self.device,
                                  weights_only=False)
-        self.model  = IMMUNEXLayer4(25).to(self.device)
+        rank = ckpt.get("lora_rank", 8)
+        self.model  = IMMUNEXLayer4(25, rank=rank).to(self.device)
         self.model.load_state_dict(ckpt["model_state"])
         self.model.eval()
         self.accuracy  = ckpt.get("accuracy", 94.82)
@@ -283,10 +284,7 @@ class ModelManager:
                 from torch.utils.data import DataLoader, TensorDataset
 
                 # Load small rehearsal batch from original data
-                train_csv = os.path.join(
-                    os.path.dirname(os.path.abspath(__file__)),
-                    "lora_retrain_source.csv"
-                )
+                train_csv = os.path.join(BASE_DIR, "lora_retrain_source.csv")
                 df = pd.read_csv(train_csv)
                 idx_orig = np.random.choice(len(df), 500, replace=False)
 

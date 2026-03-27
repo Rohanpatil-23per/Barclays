@@ -41,6 +41,7 @@ from datetime import datetime, timezone
 from typing import Any, Literal
 from dataclasses import asdict
 
+import httpx
 import structlog
 import uvicorn
 from fastapi import FastAPI, HTTPException, Request, Response
@@ -67,6 +68,70 @@ _PORT            = int(os.environ.get("IMMUNEX_PORT",         "8001"))
 _AUDIT_LOG_DIR   = os.environ.get("IMMUNEX_AUDIT_LOG_DIR",   "audit_logs")
 
 # High-impact actions are now evaluated dynamically, all require approval
+
+# ── Layer 4 retrain config ──────────────────────────────────────────────────
+_L4_RETRAIN_URL    = os.environ.get("IMMUNEX_L4_URL", "http://localhost:8004") + "/retrain"
+_L4_RETRAIN_ENABLE = os.environ.get("IMMUNEX_L4_RETRAIN", "true").lower() == "true"
+
+# Attack types that are routine — skip retraining for these
+_KNOWN_ATTACK_TYPES = {
+    "benign", "dos", "ddos", "portscan", "bruteforce",
+    "infiltration", "botnet", "web_attack", "unknown",
+}
+
+
+async def trigger_l4_retrain(alert: dict, feature_vector: list) -> None:
+    """
+    Fire-and-forget POST to L4 /retrain after L3 handles an incident.
+    Only triggers for novel attack types or critical/high severity.
+    Non-blocking — never raises into the main response path.
+
+    Sends 25-dim slice of feature vector that L4 model expects.
+    L4 mixes it with rehearsal data and retrains LoRA adapters in background.
+    """
+    if not _L4_RETRAIN_ENABLE:
+        return
+
+    attack_type = alert.get("attack_type", "unknown").lower().replace(" ", "_")
+    is_novel    = attack_type not in _KNOWN_ATTACK_TYPES
+    severity    = alert.get("severity", "low")
+
+    # Only retrain for novel attacks OR critical/high severity
+    if not is_novel and severity not in ("critical", "high"):
+        return
+
+    # L4 expects 25-dim — slice from the 128-dim L3 vector
+    features_25 = feature_vector[:25] if len(feature_vector) >= 25 else (
+        feature_vector + [0.0] * (25 - len(feature_vector))
+    )
+
+    payload = {
+        "attack_features": [features_25],
+        "attack_labels":   [1],
+        "trigger_source":  f"layer3_auto_{attack_type}",
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.post(_L4_RETRAIN_URL, json=payload)
+            if resp.status_code == 200:
+                logger.info(
+                    "l4_retrain_triggered",
+                    attack_type = attack_type,
+                    novel       = is_novel,
+                    severity    = severity,
+                    l4_response = resp.json().get("message"),
+                )
+            else:
+                logger.warning(
+                    "l4_retrain_rejected",
+                    status_code = resp.status_code,
+                    attack_type = attack_type,
+                )
+    except Exception as exc:
+        # Never let L4 failure affect L3 response
+        logger.warning("l4_retrain_failed", error=str(exc), attack_type=attack_type)
+
 
 # ── Logging ────────────────────────────────────────────────────────────────
 structlog.configure(
@@ -416,6 +481,10 @@ async def respond(alert_req: AlertRequest) -> IncidentResponse:
                 priority    = priority,
                 duration_ms = elapsed_ms,
             )
+            # ── Trigger L4 adaptive retraining (fire-and-forget) ──────────
+            asyncio.create_task(
+                trigger_l4_retrain(alert, alert.get("feature_vector", []))
+            )
             return IncidentResponse(
                 alert_id             = alert_id,
                 status               = "responded",
@@ -604,6 +673,10 @@ async def approve(
             actions        = decision.action_names,
             audit_entry_id = audit_entry_id,
             duration_ms    = elapsed_ms,
+        )
+        # ── Trigger L4 adaptive retraining (fire-and-forget) ──────────────
+        asyncio.create_task(
+            trigger_l4_retrain(alert, alert.get("feature_vector", []))
         )
 
         return IncidentResponse(
