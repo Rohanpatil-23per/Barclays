@@ -22,7 +22,7 @@ from typing import List, Optional
 import uvicorn
 
 # ─── Paths ────────────────────────────────────────────────────────────────────
-BASE_DIR   = r"E:\immunex_p4\layer4_immunity"
+BASE_DIR   = os.path.dirname(os.path.abspath(__file__))
 MODEL_DIR  = os.path.join(BASE_DIR, "models")
 LOG_DIR    = os.path.join(BASE_DIR, "logs")
 MODEL_PATH = os.path.join(MODEL_DIR, "lora_model.pt")   # primary 94.82%
@@ -284,7 +284,7 @@ class ModelManager:
 
                 # Load small rehearsal batch from original data
                 train_csv = os.path.join(
-                    r"E:\immunex_p4\person4_layer4",
+                    os.path.dirname(os.path.abspath(__file__)),
                     "lora_retrain_source.csv"
                 )
                 df = pd.read_csv(train_csv)

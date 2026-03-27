@@ -25,10 +25,10 @@ from typing import Any
 import structlog
 import ollama as ollama_client
 
-from response_engine.response_engine import ActionDecision
-from response_engine.safety_verifier import VerificationResult
-from response_engine.action_executor import ExecutionResult
-from response_engine.action_registry import ACTION_NAMES
+from response_engine_module import ActionDecision
+from safety_verifier import VerificationResult
+from action_executor import ExecutionResult
+from action_registry import ACTION_NAMES
 
 # ── Logging ────────────────────────────────────────────────────────────────
 structlog.configure(
@@ -461,7 +461,7 @@ Output valid JSON only. No markdown fences. No preamble. No trailing text."""
 if __name__ == "__main__":
     import sys
     from dataclasses import asdict
-    from response_engine.action_registry import get_action_category
+    from action_registry import get_action_category
 
     _PASS = "\033[92m[PASS]\033[0m"
     _FAIL = "\033[91m[FAIL]\033[0m"
@@ -493,7 +493,7 @@ if __name__ == "__main__":
         raw_q_values      = None,
     )
 
-    from response_engine.safety_verifier import VerificationResult as VR
+    from safety_verifier import VerificationResult as VR
     _verification = VR(
         approved                = True,
         violated_constraints    = [],

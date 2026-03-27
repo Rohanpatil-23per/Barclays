@@ -132,8 +132,8 @@ def health():
 
 @app.post("/detect", response_model=AnomalyResult)
 async def detect(alert: Alert):
-    if len(alert.features) != 77:
-        raise HTTPException(400, f"Expected 77 features, got {len(alert.features)}")
+    if not alert.features or len(alert.features) != 77:
+        raise HTTPException(400, f"Expected 77 features, got {len(alert.features) if alert.features else None}")
 
     # ── Check Redis cache first ───────────────────────────────────────────────
     cached = state["redis"].get_anomaly(alert.alert_id)
@@ -213,7 +213,8 @@ async def detect(alert: Alert):
     state["redis"].increment_alert_count(alert.source_ip)
 
     # ── Log to Elasticsearch ──────────────────────────────────────────────────
-    state["es"].index_alert({
+    try:
+        state["es"].index_alert({
         "alert_id":      alert.alert_id,
         "source_ip":     alert.source_ip,
         "dest_ip":       alert.dest_ip,
@@ -223,7 +224,9 @@ async def detect(alert: Alert):
         "layer":         1,
         "method":        method,
         "ioc_match":     ioc_type or "",
-    })
+        })
+    except Exception as es_err:
+        logger.warning(f"ES index_alert failed (non-fatal): {es_err}")
 
     # ── Pub/sub for live dashboard ────────────────────────────────────────────
     state["redis"].publish("immunex_live", {

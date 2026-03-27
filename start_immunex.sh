@@ -13,13 +13,18 @@ echo "╚═══════════════════════�
 echo ""
 echo "[1/5] Starting Docker infrastructure (Kafka, ES, Redis)..."
 docker compose up -d
-sleep 5
-if docker exec immunex_kafka kafka-topics --bootstrap-server localhost:9092 --list > /dev/null 2>&1; then
-    echo "  ✅ Kafka ready"
-else
-    echo "  ⚠️  Kafka still starting, waiting 10s..."
-    sleep 10
-fi
+echo "  ⏳ Waiting for Kafka..."
+for i in $(seq 1 20); do
+    if nc -z localhost 9092 2>/dev/null; then
+        echo "  ✅ Kafka ready"
+        break
+    fi
+    if [ "$i" -eq 20 ]; then
+        echo "  ❌ Kafka failed to start — check: docker logs immunex_kafka"
+        exit 1
+    fi
+    sleep 3
+done
 echo "  ✅ Elasticsearch (port 9200)"
 echo "  ✅ Redis (port 6379)"
 
@@ -54,7 +59,49 @@ else
 fi
 
 echo ""
-echo "[5/5] Starting Orchestrator (port 8000)..."
+echo "[5/5] Starting Layer 2 (port 8002)..."
+$HOME/.venvs/immunex/bin/uvicorn layer2_correlation.server:app --host 0.0.0.0 --port 8002 > "$LOG_DIR/layer2.log" 2>&1 &
+sleep 8
+if curl -s http://localhost:8002/health > /dev/null 2>&1; then
+    echo "  ✅ Layer 2 running"
+else
+    echo "  ❌ Layer 2 failed — check logs/layer2.log"
+fi
+
+echo ""
+echo "[6/5] Starting Layer 3 (port 8003)..."
+cd "Layer3 Response Engine/Response_engine"
+$HOME/.venvs/immunex/bin/uvicorn main:app --host 0.0.0.0 --port 8003 > "../../$LOG_DIR/layer3.log" 2>&1 &
+cd ../..
+sleep 10
+if curl -s http://localhost:8003/health > /dev/null 2>&1; then
+    echo "  ✅ Layer 3 running"
+else
+    echo "  ❌ Layer 3 failed — check logs/layer3.log"
+fi
+
+echo ""
+echo "[7/5] Starting Layer 4 (port 8004)..."
+$HOME/.venvs/immunex/bin/uvicorn layer4_immunity.server:app --host 0.0.0.0 --port 8004 > "$LOG_DIR/layer4.log" 2>&1 &
+sleep 8
+if curl -s http://localhost:8004/health > /dev/null 2>&1; then
+    echo "  ✅ Layer 4 running"
+else
+    echo "  ❌ Layer 4 failed — check logs/layer4.log"
+fi
+
+echo ""
+echo "[8/5] Starting Layer 5 (port 8005)..."
+$HOME/.venvs/immunex/bin/uvicorn "Layer5_Threat Memory.server":app --host 0.0.0.0 --port 8005 > "$LOG_DIR/layer5.log" 2>&1 &
+sleep 6
+if curl -s http://localhost:8005/health > /dev/null 2>&1; then
+    echo "  ✅ Layer 5 running"
+else
+    echo "  ❌ Layer 5 failed — check logs/layer5.log"
+fi
+
+echo ""
+echo "[9/5] Starting Orchestrator (port 8000)..."
 python3 orchestrator/server.py > "$LOG_DIR/orchestrator.log" 2>&1 &
 sleep 5
 if curl -s http://localhost:8000/health > /dev/null 2>&1; then
@@ -80,6 +127,10 @@ echo ""
 echo "Endpoints:"
 echo "  Orchestrator : http://localhost:8000"
 echo "  Layer 1      : http://localhost:8001"
+echo "  Layer 2      : http://localhost:8002"
+echo "  Layer 3      : http://localhost:8003"
+echo "  Layer 4      : http://localhost:8004"
+echo "  Layer 5      : http://localhost:8005"
 echo ""
 echo "Demo inject  : curl -X POST http://localhost:8000/demo/inject"
 echo "To stop      : ./stop_immunex.sh"

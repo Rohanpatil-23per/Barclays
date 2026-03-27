@@ -24,7 +24,7 @@ from typing import Callable
 
 import structlog
 
-from response_engine.response_engine import ActionDecision
+from response_engine_module import ActionDecision
 
 # ── Logging ────────────────────────────────────────────────────────────────
 structlog.configure(
@@ -710,7 +710,7 @@ if __name__ == "__main__":
     import json
     import sys
     from dataclasses import asdict
-    from response_engine.action_registry import ACTION_NAMES, get_action_category
+    from action_registry import ACTION_NAMES, get_action_category
 
     _PASS = "\033[92m[PASS]\033[0m"
     _FAIL = "\033[91m[FAIL]\033[0m"

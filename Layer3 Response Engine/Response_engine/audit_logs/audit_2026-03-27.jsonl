@@ -1,0 +1,1 @@
+{"audit_entry_id": "8eb9e1ba-73ab-4a7c-8d66-75653263a30c", "logged_at": "2026-03-27T12:54:25.505500+00:00", "immunex_version": "3.0.0", "layer": "3-immune-response", "event_type": "approval_request", "alert_id": "DEMO-DCF64627", "action_name": "do_nothing", "requested_at": "2026-03-27T12:54:25.505476Z", "requested_by": "system"}

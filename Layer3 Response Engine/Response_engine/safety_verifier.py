@@ -30,8 +30,8 @@ import pytz
 import structlog
 from z3 import Bool, And, Not, Or, Solver, sat, unsat
 
-from response_engine.response_engine import ActionDecision
-from response_engine.action_registry import ACTION_NAMES, get_action_category
+from response_engine_module import ActionDecision
+from action_registry import ACTION_NAMES, get_action_category
 
 # ── Logging ────────────────────────────────────────────────────────────────
 structlog.configure(

@@ -1,29 +1,20 @@
-INFO:     Started server process [69741]
+INFO:     Started server process [26963]
 INFO:     Waiting for application startup.
 INFO:kafka.conn:<BrokerConnection client_id=kafka-python-producer-1, node_id=bootstrap-0 host=localhost:9092 <connecting> [IPv6 ('::1', 9092, 0, 0)]>: connecting to localhost:9092 [('::1', 9092, 0, 0) IPv6]
 INFO:kafka.conn:<BrokerConnection client_id=kafka-python-producer-1, node_id=bootstrap-0 host=localhost:9092 <checking_api_versions_recv> [IPv6 ('::1', 9092, 0, 0)]>: Broker version identified as 2.6
 INFO:kafka.conn:<BrokerConnection client_id=kafka-python-producer-1, node_id=bootstrap-0 host=localhost:9092 <connected> [IPv6 ('::1', 9092, 0, 0)]>: Connection complete.
 INFO:shared.kafka_client:Kafka producer connected
 INFO:shared.redis_client:Redis connected
-INFO:elastic_transport.transport:HEAD http://localhost:9200/immunex_logs [status:200 duration:0.004s]
+INFO:elastic_transport.transport:HEAD http://localhost:9200/immunex_logs [status:200 duration:0.002s]
 INFO:elastic_transport.transport:HEAD http://localhost:9200/immunex_incidents [status:200 duration:0.001s]
 INFO:elastic_transport.transport:HEAD http://localhost:9200/immunex_alerts [status:200 duration:0.001s]
 INFO:shared.es_client:Elasticsearch connected
 INFO:orchestrator:Orchestrator started
 INFO:orchestrator:Layer endpoints: {1: 'http://localhost:8001', 2: 'http://localhost:8002', 3: 'http://localhost:8003', 4: 'http://localhost:8004', 5: 'http://localhost:8005'}
 INFO:     Application startup complete.
-INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
-INFO:httpx:HTTP Request: POST http://localhost:8001/detect "HTTP/1.1 200 OK"
-INFO:orchestrator:Layer 1 /detect: OK
-WARNING:orchestrator:Layer 4 OFFLINE — skipping /immunize
-WARNING:orchestrator:Layer 2 OFFLINE — skipping /correlate
-WARNING:orchestrator:Layer 2 offline — using fallback response action
-WARNING:orchestrator:Layer 5 OFFLINE — skipping /explain
-WARNING:orchestrator:Layer 5 offline — generating playbook from Layer 1 Ollama
-INFO:httpx:HTTP Request: POST http://localhost:8001/generate-playbook "HTTP/1.1 200 OK"
-INFO:kafka.conn:<BrokerConnection client_id=kafka-python-producer-1, node_id=1 host=localhost:9092 <connecting> [IPv6 ('::1', 9092, 0, 0)]>: connecting to localhost:9092 [('::1', 9092, 0, 0) IPv6]
-INFO:kafka.conn:<BrokerConnection client_id=kafka-python-producer-1, node_id=1 host=localhost:9092 <connected> [IPv6 ('::1', 9092, 0, 0)]>: Connection complete.
+ERROR:    [Errno 98] error while attempting to bind on address ('0.0.0.0', 8000): address already in use
+INFO:     Waiting for application shutdown.
+INFO:kafka.producer.kafka:<KafkaProducer client_id=kafka-python-producer-1 transactional_id=None>: Closing the Kafka producer with 9223372036.0 secs timeout.
 INFO:kafka.conn:<BrokerConnection client_id=kafka-python-producer-1, node_id=bootstrap-0 host=localhost:9092 <connected> [IPv6 ('::1', 9092, 0, 0)]>: Closing connection. 
-INFO:shared.kafka_client:Sent to immunex_playbooks partition 0 offset 0
-INFO:elastic_transport.transport:POST http://localhost:9200/immunex_incidents/_doc [status:201 duration:0.027s]
-INFO:     127.0.0.1:56510 - "POST /demo/inject HTTP/1.1" 200 OK
+INFO:orchestrator:Orchestrator shutdown
+INFO:     Application shutdown complete.

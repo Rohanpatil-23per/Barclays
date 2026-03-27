@@ -107,6 +107,10 @@ async def run_pipeline(alert: Alert):
         result["error"] = "Layer 1 offline — cannot proceed"
         return result
 
+    if not l1.get("embedding"):
+        result["error"] = "Layer 1 returned no embedding"
+        return result
+
     if not l1.get("is_anomalous", False):
         result["verdict"]       = "BENIGN"
         result["anomaly_score"] = l1.get("anomaly_score", 0)
@@ -118,34 +122,35 @@ async def run_pipeline(alert: Alert):
 
     # Layer 2 + 4 in parallel
     l2_payload = {
-        "alert_id":         l1["alert_id"],
-        "timestamp":        l1["timestamp"],
-        "source_ip":        l1["source_ip"],
-        "dest_ip":          l1["dest_ip"],
-        "attack_type":      l1["attack_type"],
-        "anomaly_score":    l1["anomaly_score"],
-        "is_anomalous":     l1["is_anomalous"],
-        "embedding":        l1["embedding"],
-        "detection_method": l1["detection_method"],
-        "confidence":       l1["confidence"],
+        "alert_id":       l1["alert_id"],
+        "timestamp":      l1["timestamp"],
+        "source_ip":      l1["source_ip"],
+        "dest_ip":        l1["dest_ip"],
+        "attack_type":    l1["attack_type"],
+        "anomaly_score":  l1["anomaly_score"],
+        "feature_vector": l1["embedding"],
     }
-    l4_payload = l2_payload.copy()
+    l4_payload = {"features": l1["embedding"]}
 
     l2, l4 = await asyncio.gather(
         call_layer(2, "/correlate", l2_payload),
-        call_layer(4, "/immunize",  l4_payload),
+        call_layer(4, "/predict",   l4_payload),
     )
     result["layer2"] = l2
     result["layer4"] = l4
-
-    # Layer 3: Response (needs Layer 2 output)
     if l2:
         l3_payload = {
-            "chain_id":             l2.get("chain_id", str(uuid.uuid4())),
-            "nodes":                l2.get("nodes", []),
-            "edges":                l2.get("edges", []),
-            "predicted_next_stage": l2.get("predicted_next_stage", "unknown"),
-            "confidence":           l2.get("confidence", 0.5),
+            "alert_id":          l1["alert_id"],
+            "timestamp":         l1["timestamp"],
+            "source_ip":         l1["source_ip"],
+            "destination_ip":    l1["dest_ip"],
+            "source_port":       0,
+            "destination_port":  0,
+            "protocol":          "TCP",
+            "severity":          "critical" if l1["anomaly_score"] > 0.7 else "high" if l1["anomaly_score"] > 0.4 else "medium",
+            "attack_type":       l1["attack_type"],
+            "feature_vector":    l1["embedding"],
+            "layer2_confidence": l2.get("confidence", 0.5),
         }
         l3 = await call_layer(3, "/respond", l3_payload)
         result["layer3"]       = l3
@@ -208,7 +213,7 @@ async def run_pipeline(alert: Alert):
         "alert_id":      alert.alert_id,
         "verdict":       result["verdict"],
         "anomaly_score": result["anomaly_score"],
-        "action":        result.get("final_action", {}).get("action", "unknown"),
+        "action":        (result.get("final_action") or {}).get("action", "unknown"),
         "timestamp":     started_at,
     })
 
@@ -240,8 +245,9 @@ async def demo_inject():
         source_ip  = "203.0.113.99",
         dest_ip    = "192.168.10.50",
         alert_type = "Zeus_Banking_Trojan",
-        severity   = 0.95,
+        severity   = "critical",
         features   = botnet_features,
+        text       = "Zeus banking trojan detected port scan from 203.0.113.99",
     )
     result = await run_pipeline(demo_alert)
     result["demo"] = True

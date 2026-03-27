@@ -21,10 +21,10 @@ from dataclasses import asdict
 from datetime import datetime, timezone
 from typing import Any
 
-from response_engine.response_engine import ActionDecision
-from response_engine.safety_verifier import VerificationResult
-from response_engine.action_executor import ExecutionResult
-from response_engine.playbook_generator import PlaybookReport
+from response_engine_module import ActionDecision
+from safety_verifier import VerificationResult
+from action_executor import ExecutionResult
+from playbook_generator import PlaybookReport
 
 # Version stamped on every log entry
 _IMMUNEX_VERSION = "3.0.0"
@@ -262,7 +262,7 @@ class AuditLogger:
 # ── Smoke test ─────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    from response_engine.action_registry import get_action_category
+    from action_registry import get_action_category
 
     print("=" * 55)
     print("  IMMUNEX Layer 3 — AuditLogger Smoke Test")

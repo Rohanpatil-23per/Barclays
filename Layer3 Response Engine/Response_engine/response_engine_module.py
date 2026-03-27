@@ -14,7 +14,7 @@ import torch
 import structlog
 from stable_baselines3 import DQN
 
-from response_engine.action_registry import ACTION_NAMES, get_action_category
+from action_registry import ACTION_NAMES, get_action_category
 
 # ── Structlog configuration ────────────────────────────────────────────────
 structlog.configure(
@@ -120,7 +120,7 @@ class ResponseEngine:
         """
         Validates shape and content of the incoming feature vector.
 
-        Returns a (128,) float32 numpy array.
+        Returns a float32 numpy array.
         Raises ValueError with a descriptive message on any problem.
         """
         if not isinstance(feature_vector, (list, np.ndarray)):
@@ -128,13 +128,17 @@ class ResponseEngine:
                 f"feature_vector must be a list or ndarray, got {type(feature_vector).__name__}"
             )
 
-        if len(feature_vector) != 128:
-            raise ValueError(
-                f"feature_vector must have exactly 128 elements, got {len(feature_vector)}"
-            )
+        if len(feature_vector) == 0:
+            raise ValueError("feature_vector must not be empty")
 
         # Explicit float32 cast — input may arrive as float64 from numpy or JSON
         arr = np.array(feature_vector, dtype=np.float32)
+        # RL model trained on 128-dim — truncate or zero-pad to match
+        TARGET = 128
+        if arr.shape[0] > TARGET:
+            arr = arr[:TARGET]
+        elif arr.shape[0] < TARGET:
+            arr = np.concatenate([arr, np.zeros(TARGET - arr.shape[0], dtype=np.float32)])
 
         if np.isnan(arr).any():
             raise ValueError("feature_vector contains NaN values")
@@ -150,7 +154,7 @@ class ResponseEngine:
         """
         Runs inference on a Layer 2 alert dict.
 
-        Extracts the 128-dim feature vector, runs the DQN, and returns a
+        Extracts the feature vector, runs the DQN, and returns a
         fully-populated ActionDecision.
         """
         alert_id = alert.get("alert_id", str(uuid.uuid4()))

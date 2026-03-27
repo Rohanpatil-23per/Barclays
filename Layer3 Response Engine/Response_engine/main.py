@@ -49,16 +49,16 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, field_validator
 
 # FIX 2: All imports at module level — not inside request handlers
-from response_engine.response_engine import ActionDecision, ResponseEngine
-from response_engine.safety_verifier import SafetyVerifier, VerificationResult
-from response_engine.action_executor import ActionExecutor, ExecutionResult
-from response_engine.playbook_generator import PlaybookGenerator, PlaybookReport
-from response_engine.audit_logger import AuditLogger
-from response_engine.action_registry import ACTION_NAMES, get_action_category
-from response_engine.llm_reasoning import generate_llm_reasoning, human_approval
+from response_engine_module import ActionDecision, ResponseEngine
+from safety_verifier import SafetyVerifier, VerificationResult
+from action_executor import ActionExecutor, ExecutionResult
+from playbook_generator import PlaybookGenerator, PlaybookReport
+from audit_logger import AuditLogger
+from action_registry import ACTION_NAMES, get_action_category
+from llm_reasoning import generate_llm_reasoning, human_approval
 
 # ── Env config ─────────────────────────────────────────────────────────────
-_MODEL_PATH      = os.environ.get("IMMUNEX_MODEL_PATH",      "models/dueling_dqn_immunex.zip")
+_MODEL_PATH      = os.environ.get("IMMUNEX_MODEL_PATH",      "model_weights/dueling_dqn_immunex.zip")
 _MGMT_IP         = os.environ.get("IMMUNEX_MGMT_IP",         "127.0.0.1")
 _BACKUP_REGISTRY = os.environ.get("IMMUNEX_BACKUP_REGISTRY", "backups/registry.json")
 _OLLAMA_HOST     = os.environ.get("IMMUNEX_OLLAMA_HOST",     "http://localhost:11434")
@@ -121,7 +121,7 @@ def calculate_priority(alert: dict, decision: Any) -> int:
 # ── Pydantic request / response models ────────────────────────────────────
 
 class AlertRequest(BaseModel):
-    model_config = {"extra": "forbid"}
+    model_config = {"extra": "ignore"}
 
     alert_id:          str
     timestamp:         str
@@ -135,13 +135,24 @@ class AlertRequest(BaseModel):
     feature_vector:    list[float]
     layer2_confidence: float
 
+    @field_validator("feature_vector", mode="before")
+    @classmethod
+    def _normalize_feature_vector(cls, v):
+        if not v:
+            raise ValueError("feature_vector must not be empty")
+        # RL model trained on 128-dim; truncate or pad to match
+        TARGET = 128
+        if len(v) > TARGET:
+            return v[:TARGET]
+        elif len(v) < TARGET:
+            return list(v) + [0.0] * (TARGET - len(v))
+        return v
+
     @field_validator("feature_vector")
     @classmethod
-    def vector_must_be_128(cls, v: list[float]) -> list[float]:
-        if len(v) != 128:
-            raise ValueError(
-                f"feature_vector must have exactly 128 elements, got {len(v)}"
-            )
+    def vector_must_not_be_empty(cls, v: list[float]) -> list[float]:
+        if len(v) == 0:
+            raise ValueError("feature_vector must not be empty")
         return v
 
     @field_validator("layer2_confidence")
@@ -548,7 +559,7 @@ async def approve(
     try:
         # 1. Playbook Override Workflow
         # Synthesize a pre-execution mock to safely generate the playbook prior to real execution
-        from response_engine.action_executor import ExecutionResult
+        from action_executor import ExecutionResult
         dummy_exec = ExecutionResult(
             alert_id=alert_id, action_index=decision.action_index, action_name=decision.action_name,
             actions=decision.actions, action_names=decision.action_names, status="simulated",
