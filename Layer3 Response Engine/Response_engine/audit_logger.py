@@ -21,10 +21,10 @@ from dataclasses import asdict
 from datetime import datetime, timezone
 from typing import Any
 
-from response_engine.response_engine import ActionDecision
-from response_engine.safety_verifier import VerificationResult
-from response_engine.action_executor import ExecutionResult
-from response_engine.playbook_generator import PlaybookReport
+from response_engine_module import ActionDecision
+from safety_verifier import VerificationResult
+from action_executor import ExecutionResult
+from playbook_generator import PlaybookReport
 
 # Version stamped on every log entry
 _IMMUNEX_VERSION = "3.0.0"
@@ -116,22 +116,13 @@ class AuditLogger:
         priority:         int | None = None,
         modified_actions: list[int] | None = None,
         before_actions:   list[int] | None = None,
-        # [IMMUNEX-PATCH] Bug 12: explicit approval provenance fields so the
-        # .jsonl audit record captures EXACTLY who pressed the button.
-        auto_approved:    bool = False,
-        human_reviewed:   bool = False,
-        approver_id:      str  = "system",
     ) -> str:
         """
         Logs a complete incident response decision.
 
-        Returns the audit_entry_id (UUID string) in all cases --
+        Returns the audit_entry_id (UUID string) in all cases —
         including on write failure, so the caller always gets a
         consistent identifier regardless of I/O errors.
-
-        [IMMUNEX-PATCH] Bug 12: entry now includes auto_approved, human_reviewed,
-        and approver_id so the compliance trail records exactly who/what triggered
-        execution — the DQN pipeline, a human approval, or a human override.
         """
         audit_entry_id = str(uuid.uuid4())
 
@@ -151,10 +142,6 @@ class AuditLogger:
             "after_actions":    decision.actions if decision else [],
             "approval_status":  "rejected" if execution is None else "approved",
             "execution_status": execution.status if execution else "rejected/aborted",
-            # [IMMUNEX-PATCH] Bug 12: explicit approval provenance
-            "auto_approved":    auto_approved,
-            "human_reviewed":   human_reviewed,
-            "approver_id":      approver_id,
             "alert":            alert,
             "decision":         self._to_dict(decision),
             "verification":     self._to_dict(verification),
@@ -275,7 +262,7 @@ class AuditLogger:
 # ── Smoke test ─────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    from response_engine.action_registry import get_action_category
+    from action_registry import get_action_category
 
     print("=" * 55)
     print("  IMMUNEX Layer 3 — AuditLogger Smoke Test")

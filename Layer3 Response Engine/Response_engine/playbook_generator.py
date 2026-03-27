@@ -25,10 +25,10 @@ from typing import Any
 import structlog
 import ollama as ollama_client
 
-from response_engine.response_engine import ActionDecision
-from response_engine.safety_verifier import VerificationResult
-from response_engine.action_executor import ExecutionResult
-from response_engine.action_registry import ACTION_NAMES
+from response_engine_module import ActionDecision
+from safety_verifier import VerificationResult
+from action_executor import ExecutionResult
+from action_registry import ACTION_NAMES
 
 # ── Logging ────────────────────────────────────────────────────────────────
 structlog.configure(
@@ -210,18 +210,6 @@ class PlaybookGenerator:
 
         parsed = self._parse_response(raw_resp, alert_id)
 
-        # [IMMUNEX-PATCH] Bug 11: safely parse executable_actions and strip any
-        # action IDs not present in the global ACTION_NAMES registry.
-        # This prevents LLM hallucinations (e.g. action index 99 or -1) from
-        # reaching the ActionExecutor and causing KeyErrors or bypass exploits.
-        raw_exec_actions = parsed.get("executable_actions", [])
-        if not isinstance(raw_exec_actions, list):
-            raw_exec_actions = []
-        safe_exec_actions = [
-            a for a in raw_exec_actions
-            if isinstance(a, int) and a in ACTION_NAMES   # [IMMUNEX-PATCH] Bug 11
-        ]
-
         return PlaybookReport(
             alert_id              = alert_id,
             generated_at          = datetime.utcnow().isoformat() + "Z",
@@ -237,7 +225,7 @@ class PlaybookGenerator:
                                                f"(confidence {decision.confidence:.2%})."),
             playbook_steps        = parsed.get("playbook_steps",
                                                _CATEGORY_PLAYBOOKS.get(getattr(decision, "action_categories", ["unknown"])[0], [])),
-            executable_actions    = safe_exec_actions,    # [IMMUNEX-PATCH] Bug 11: registry-filtered
+            executable_actions    = parsed.get("executable_actions", []),
             compliance_notes      = parsed.get("compliance_notes",
                                                _CATEGORY_COMPLIANCE.get(getattr(decision, "action_categories", ["unknown"])[0], "")),
             recommended_followup  = parsed.get("recommended_followup", []),
@@ -323,10 +311,9 @@ class PlaybookGenerator:
             if verification.violated_constraints
             else "None"
         )
-        # Build the DQN-approved action set string for the prompt
-        dqn_action_str = ", ".join(
-            f"{idx}: {ACTION_NAMES.get(idx, 'unknown')}"
-            for idx in (decision.actions if decision.actions else [decision.action_index])
+        # Concise action list for the model's context window
+        action_list = "\n  ".join(
+            f"{idx}: {name}" for idx, name in ACTION_NAMES.items()
         )
 
         return f"""INCIDENT CONTEXT:
@@ -339,36 +326,29 @@ class PlaybookGenerator:
   Attack Type:        {alert.get('attack_type', 'N/A')}
   Layer 2 Confidence: {alert.get('layer2_confidence', 0.0):.2%}
 
-RESPONSE DECISION (from DQN model — this is the FINAL decision):
+RESPONSE DECISION:
   Action Taken:       {decision.action_name} (index {decision.action_index})
-  All DQN Actions:    {dqn_action_str}
   Category:           {getattr(decision, "action_categories", ["unknown"])[0]}
   Execution Status:   {execution.status}
   Z3 Safety Verified: {verification.approved}
   Constraints Violated: {constraints_str}
   Requires Approval:  {decision.requires_approval}
 
-CRITICAL CONSTRAINT:
-  The DQN model has ALREADY decided to execute: {decision.action_name}.
-  Your playbook_steps MUST describe steps consistent with "{decision.action_name}" ONLY.
-  Do NOT suggest containment, blocking, or escalation steps unless the DQN action
-  explicitly involves those. If the action is "do_nothing", the playbook should
-  describe observation, monitoring, and verification steps — NOT active containment.
-  The "executable_actions" field MUST only contain indices from the DQN-approved
-  set: [{', '.join(str(a) for a in (decision.actions or [decision.action_index]))}].
-
 ENVIRONMENT:
   Banking production system.
   Compliance requirements: RBI Cybersecurity Circular, GDPR Article 32,
   DORA ICT incident reporting (Article 19).
 
+AVAILABLE ACTIONS (for context, 50 total):
+  {action_list}
+
 Respond with a JSON object containing EXACTLY these fields:
-  "incident_summary"      : 2-3 sentence executive summary (must reference the DQN action: {decision.action_name})
+  "incident_summary"      : 2-3 sentence executive summary
   "threat_classification" : threat category/name
   "risk_level"            : one of LOW / MEDIUM / HIGH / CRITICAL
-  "action_rationale"      : why "{decision.action_name}" was the correct response given the context
-  "playbook_steps"        : JSON array of 5-8 numbered step strings consistent with "{decision.action_name}"
-  "executable_actions"    : JSON array containing ONLY these approved action indices: [{', '.join(str(a) for a in (decision.actions or [decision.action_index]))}]
+  "action_rationale"      : why this specific action was the correct response
+  "playbook_steps"        : JSON array of 5-8 numbered step strings
+  "executable_actions"    : JSON array of integer action indices (from the AVAILABLE ACTIONS list) that correspond to the steps. Empty array if none.
   "compliance_notes"      : relevant RBI/GDPR/DORA obligations
   "recommended_followup"  : JSON array of 3-5 follow-up action strings
 
@@ -481,7 +461,7 @@ Output valid JSON only. No markdown fences. No preamble. No trailing text."""
 if __name__ == "__main__":
     import sys
     from dataclasses import asdict
-    from response_engine.action_registry import get_action_category
+    from action_registry import get_action_category
 
     _PASS = "\033[92m[PASS]\033[0m"
     _FAIL = "\033[91m[FAIL]\033[0m"
@@ -513,7 +493,7 @@ if __name__ == "__main__":
         raw_q_values      = None,
     )
 
-    from response_engine.safety_verifier import VerificationResult as VR
+    from safety_verifier import VerificationResult as VR
     _verification = VR(
         approved                = True,
         violated_constraints    = [],

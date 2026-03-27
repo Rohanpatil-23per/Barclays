@@ -10,6 +10,13 @@ class Alert(BaseModel):
     severity: Optional[str] = "medium"
     features: Optional[List[float]] = None
     text: Optional[str] = None
+    event_type: Optional[str] = None
+    protocol: Optional[str] = None
+    port: Optional[int] = None
+    username: Optional[str] = None
+    process: Optional[str] = None
+    file: Optional[str] = None
+    privilege_level: Optional[str] = None
 
 class AnomalyResult(BaseModel):
     alert_id: str
@@ -21,6 +28,13 @@ class AnomalyResult(BaseModel):
     is_anomalous: bool
     embedding: List[float]
     detection_method: Optional[str] = "unknown"
+    event_type: Optional[str] = None
+    protocol: Optional[str] = None
+    port: Optional[int] = None
+    username: Optional[str] = None
+    process: Optional[str] = None
+    file: Optional[str] = None
+    privilege_level: Optional[str] = None
     confidence: float
 
 class AttackGraph(BaseModel):

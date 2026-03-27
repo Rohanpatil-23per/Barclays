@@ -48,7 +48,7 @@ echo "  ✅ Device: $CUDA"
 
 echo ""
 echo "[4/5] Starting Layer 1 (port 8001)..."
-python3 layer1_detection/server.py > "$LOG_DIR/layer1.log" 2>&1 &
+$HOME/.venvs/immunex/bin/uvicorn layer1_detection.server:app --host 0.0.0.0 --port 8001 > "$LOG_DIR/layer1.log" 2>&1 &
 echo "  ⏳ Loading models... (PID $!)"
 sleep 15
 if curl -s http://localhost:8001/health > /dev/null 2>&1; then

@@ -201,6 +201,13 @@ async def detect(alert: Alert):
         embedding        = embedding,
         detection_method = method,
         confidence       = attack_prob,
+        event_type       = alert.event_type,
+        protocol         = alert.protocol,
+        port             = alert.port,
+        username         = alert.username,
+        process          = alert.process,
+        file             = alert.file,
+        privilege_level  = alert.privilege_level,
     )
 
     # ── Publish to Kafka → Layer 2 ────────────────────────────────────────────

@@ -20,23 +20,17 @@ Usage
   from response_engine_module import PlaybookGenerator, PlaybookReport
   from response_engine_module import AuditLogger
   from response_engine_module import ACTION_NAMES, get_action_category
-  from response_engine import ResponseEngine, ActionDecision
-  from response_engine import SafetyVerifier, VerificationResult
-  from response_engine import ActionExecutor, ExecutionResult
-  from response_engine import PlaybookGenerator, PlaybookReport
-  from response_engine import AuditLogger
-  from response_engine import ACTION_NAMES, get_action_category
 """
 
 __version__ = "3.0.0"
 __author__  = "IMMUNEX — Team Wayfinders"
 
-from response_engine.response_engine     import ResponseEngine, ActionDecision
-from response_engine.action_registry     import ACTION_NAMES, get_action_category
-from response_engine.safety_verifier     import SafetyVerifier, VerificationResult
-from response_engine.action_executor     import ActionExecutor, ExecutionResult
-from response_engine.playbook_generator  import PlaybookGenerator, PlaybookReport
-from response_engine.audit_logger        import AuditLogger
+from response_engine_module import ResponseEngine, ActionDecision
+from response_engine_module import SafetyVerifier, VerificationResult
+from response_engine_module import ActionExecutor, ExecutionResult
+from response_engine_module import PlaybookGenerator, PlaybookReport
+from response_engine_module import AuditLogger
+from response_engine_module import ACTION_NAMES, get_action_category
 
 __all__ = [
     "ResponseEngine",

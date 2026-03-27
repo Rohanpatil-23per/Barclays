@@ -130,7 +130,7 @@ async def run_pipeline(alert: Alert):
         "anomaly_score":  l1["anomaly_score"],
         "feature_vector": l1["embedding"],
     }
-    l4_payload = {"features": l1["embedding"]}
+    l4_payload = {"features": (l1["embedding"][:25] if len(l1["embedding"]) >= 25 else l1["embedding"] + [0.0] * (25 - len(l1["embedding"])))}
 
     l2, l4 = await asyncio.gather(
         call_layer(2, "/correlate", l2_payload),
@@ -248,6 +248,13 @@ async def demo_inject():
         severity   = "critical",
         features   = botnet_features,
         text       = "Zeus banking trojan detected port scan from 203.0.113.99",
+        event_type      = "FILE_ACCESS",
+        protocol        = "TCP",
+        port            = 445,
+        username        = "svc_account_03",
+        process         = "powershell.exe",
+        file            = "C:\\finance\\transactions_Q1.xlsx",
+        privilege_level = "admin",
     )
     result = await run_pipeline(demo_alert)
     result["demo"] = True
