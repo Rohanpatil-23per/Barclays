@@ -1,7 +1,7 @@
 import sys, os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import json, uuid, asyncio, logging, hashlib, time as _time
+import json, uuid, asyncio, logging
 from datetime import datetime
 from contextlib import asynccontextmanager
 from typing import Optional
@@ -83,6 +83,8 @@ async def health():
         "all_online": all(layer_status.values()),
     }
 
+@app.post("/pipeline/run")
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # RELEVANCE / SIGNAL QUALITY FILTER
 # Runs before any downstream processing to drop noise, duplicates, and
@@ -146,7 +148,6 @@ def relevance_filter(l1: dict, alert) -> dict:
     return {"pass": False, "reason": "below_all_thresholds",
             "quality": "noise", "retrain_eligible": False, "playbook_eligible": False}
 
-@app.post("/pipeline/run")
 async def run_pipeline(alert: Alert):
     pipeline_id = str(uuid.uuid4())
     started_at  = datetime.utcnow().isoformat()
@@ -182,15 +183,6 @@ async def run_pipeline(alert: Alert):
 
     result["verdict"]       = "ANOMALOUS"
     result["anomaly_score"] = l1.get("anomaly_score", 0)
-
-    # ── Relevance filter ────────────────────────────────────────────────────
-    rf = relevance_filter(l1, alert)
-    if not rf.get("pass"):
-        result["verdict"]  = "FILTERED"
-        result["reason"]   = rf.get("reason")
-        result["quality"]  = rf.get("quality")
-        _log_to_es(result, alert)
-        return result
 
     # Layer 2 + 4 in parallel
     l2_payload = {

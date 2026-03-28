@@ -132,9 +132,6 @@ def health():
 
 @app.post("/detect", response_model=AnomalyResult)
 async def detect(alert: Alert):
-    if not alert.features or len(alert.features) != 77:
-        raise HTTPException(400, f"Expected 77 features, got {len(alert.features) if alert.features else None}")
-
     # ── Check Redis cache first ───────────────────────────────────────────────
     cached = state["redis"].get_anomaly(alert.alert_id)
     if cached:
@@ -190,17 +187,27 @@ async def detect(alert: Alert):
     else:
         method = "ensemble"
 
+    # ── Novel attack detection: low RoBERTa conf but high iso/faiss score ──────
+    effective_attack_type = alert.alert_type
+    if attack_prob < 0.15 and anomaly_score > 0.6:
+        effective_attack_type = "Unknown_Novel_Attack"
+        method = method + "+novel_flag"
+
+    # ── Pass raw CICIDS scaled features to L4 (semantic signal) ─────────────
+    cicids_features_25 = scaled[0][:25].tolist()
+
     result = AnomalyResult(
         alert_id         = alert.alert_id,
         timestamp        = alert.timestamp,
         source_ip        = alert.source_ip,
         dest_ip          = alert.dest_ip,
-        attack_type      = alert.alert_type,
+        attack_type      = effective_attack_type,
         anomaly_score    = anomaly_score,
         is_anomalous     = is_anomalous,
         embedding        = embedding,
         detection_method = method,
         confidence       = attack_prob,
+        cicids_features  = cicids_features_25,
         event_type       = alert.event_type,
         protocol         = alert.protocol,
         port             = alert.port,

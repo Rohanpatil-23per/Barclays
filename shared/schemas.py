@@ -1,14 +1,16 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, model_validator
 from typing import List, Optional, Any
 
 class Alert(BaseModel):
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
+
     alert_id: Optional[str] = None
     timestamp: Optional[str] = None
-    source_ip: str
+    source_ip: Optional[str] = None
     dest_ip: Optional[str] = None
     alert_type: Optional[str] = "network"
     severity: Optional[str] = "medium"
-    features: Optional[List[float]] = None
+    features: Optional[List[Optional[float]]] = None
     text: Optional[str] = None
     event_type: Optional[str] = None
     protocol: Optional[str] = None
@@ -20,7 +22,7 @@ class Alert(BaseModel):
 
 class AnomalyResult(BaseModel):
     alert_id: str
-    timestamp: str
+    timestamp: Optional[str]
     source_ip: Optional[str] = None
     dest_ip: Optional[str] = None
     attack_type: Optional[str] = "unknown"
@@ -36,6 +38,7 @@ class AnomalyResult(BaseModel):
     file: Optional[str] = None
     privilege_level: Optional[str] = None
     confidence: float
+    cicids_features: Optional[List[float]] = None
 
 class AttackGraph(BaseModel):
     chain_id: str

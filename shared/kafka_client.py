@@ -16,29 +16,50 @@ TOPICS = {
 
 class IMMUNEXProducer:
     def __init__(self, bootstrap_servers=KAFKA_BOOTSTRAP):
-        self.producer = KafkaProducer(
-            bootstrap_servers=bootstrap_servers,
-            value_serializer=lambda v: json.dumps(v).encode("utf-8"),
-            key_serializer=lambda k: k.encode("utf-8") if k else None,
-            acks="all",
-            retries=3,
-        )
-        logger.info("Kafka producer connected")
+        self.producer = None
+        self._bootstrap = bootstrap_servers
+        self._connect()
+
+    def _connect(self):
+        try:
+            self.producer = KafkaProducer(
+                bootstrap_servers=self._bootstrap,
+                value_serializer=lambda v: json.dumps(v).encode("utf-8"),
+                key_serializer=lambda k: k.encode("utf-8") if k else None,
+                acks="all",
+                retries=3,
+                request_timeout_ms=5000,
+                api_version_auto_timeout_ms=5000,
+            )
+            logger.info("Kafka producer connected")
+        except Exception as e:
+            logger.warning(f"Kafka unavailable — running without event streaming: {e}")
+            self.producer = None
 
     def send(self, topic_key: str, message: dict, key: Optional[str] = None):
+        if self.producer is None:
+            self._connect()
+        if self.producer is None:
+            logger.warning(f"Kafka offline — dropped message to {topic_key}")
+            return False
         topic = TOPICS.get(topic_key, topic_key)
         try:
             future = self.producer.send(topic, value=message, key=key)
             record = future.get(timeout=10)
             logger.info(f"Sent to {topic} partition {record.partition} offset {record.offset}")
             return True
-        except KafkaError as e:
+        except Exception as e:
             logger.error(f"Kafka send failed: {e}")
+            self.producer = None
             return False
 
     def close(self):
-        self.producer.flush()
-        self.producer.close()
+        if self.producer:
+            try:
+                self.producer.flush()
+                self.producer.close()
+            except Exception:
+                pass
 
 
 class IMMUNEXConsumer:

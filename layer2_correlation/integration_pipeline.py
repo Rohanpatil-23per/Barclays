@@ -64,7 +64,7 @@ class IMMUNEX_Pipeline:
 
         # 2. Load the Temporal Narrative Tracker (BiLSTM)
         try:
-            self.bilstm = IMMUNEX_BiLSTM_Tracker(input_dim=118, hidden_dim=128, num_layers=2, num_classes=5).to(self.device)
+            self.bilstm = IMMUNEX_BiLSTM_Tracker(input_dim=118, hidden_dim=128, num_layers=2, num_classes=6).to(self.device)
             self.bilstm.load_state_dict(torch.load(bilstm_weights, map_location=self.device, weights_only=True))
             self.bilstm.eval()
             print("[+] BiLSTM Narrative Tracker Loaded (5-Class MITRE Output).")

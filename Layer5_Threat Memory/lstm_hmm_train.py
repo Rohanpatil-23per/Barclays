@@ -40,9 +40,9 @@ else:
 # CONFIGURATION
 # ================================================================
 CONFIG = {
-    "cicids_path":    "F:/Barclays/immunex/Aditya Dataset/team_datasets/person5_layer5/hmm_sequences_cicids.csv",
-    "nslkdd_path":    "F:/Barclays/immunex/Aditya Dataset/team_datasets/person5_layer5/hmm_nslkdd.csv",
-    "network_path":   "F:/Barclays/immunex/Aditya Dataset/team_datasets/person5_layer5/train_test_network.csv",
+    "cicids_path":    "team_datasets/person5_layer5/hmm_sequences_cicids.csv",
+    "nslkdd_path":    "team_datasets/person5_layer5/hmm_nslkdd.csv",
+    "network_path":   "team_datasets/person5_layer5/train_test_network.csv",
     "n_states":       5,
     "n_observations": 10,
     "hmm_iterations": 100,
@@ -55,8 +55,8 @@ CONFIG = {
     "epochs":         40,
     "learning_rate":  0.001,
     "n_chains":       60000,
-    "hmm_output_path":  "immunex_hmm.pkl",
-    "lstm_output_path": "immunex_lstm_final.pt",
+    "hmm_output_path":  "Layer5_Threat Memory/immunex_hmm.pkl",
+    "lstm_output_path": "Layer5_Threat Memory/immunex_lstm_final.pt",
 }
 
 STATE_NAMES = ['Recon', 'Init Access', 'Priv Esc', 'Lateral Mv', 'Exfiltration']

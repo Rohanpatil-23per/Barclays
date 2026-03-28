@@ -191,7 +191,7 @@ class L5Models:
         # ── LSTM ─────────────────────────────────────────────
         try:
             raw = torch.load(lstm_path, map_location="cpu", weights_only=False)
-            state_dict = raw if isinstance(raw, dict) else raw.state_dict()
+            state_dict = raw.get("model_state_dict", raw) if isinstance(raw, dict) else raw.state_dict()
 
             arch = infer_lstm_architecture(state_dict)
             if arch:
@@ -354,6 +354,7 @@ async def predict(req: PredictRequest):
             stage_obs_map = {
                 "Reconnaissance": "port_scan",
                 "Initial_Access":  "login_fail",
+                "Initial Access":   "login_fail",
                 "Execution":       "lateral_movement",
                 "Impact":          "large_upload",
                 "Exfiltration":    "large_upload",

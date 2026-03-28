@@ -1,68 +1,81 @@
 import logging
-from datetime import datetime
+from typing import Optional
 from elasticsearch import Elasticsearch
+from elasticsearch.exceptions import ConnectionError as ESConnectionError
 
 logger = logging.getLogger(__name__)
 
 ES_HOST = "http://localhost:9200"
 
-INDICES = {
-    "logs":      "immunex_logs",
-    "incidents": "immunex_incidents",
-    "alerts":    "immunex_alerts",
-}
-
-MAPPINGS = {
-    "mappings": {
-        "properties": {
-            "timestamp":     {"type": "date"},
-            "alert_id":      {"type": "keyword"},
-            "source_ip":     {"type": "ip"},
-            "dest_ip":       {"type": "ip"},
-            "attack_type":   {"type": "keyword"},
-            "anomaly_score": {"type": "float"},
-            "is_anomalous":  {"type": "boolean"},
-            "layer":         {"type": "integer"},
-            "raw":           {"type": "object", "enabled": False},
-        }
-    }
-}
-
 class IMMUNEXElastic:
     def __init__(self, host=ES_HOST):
-        self.es = Elasticsearch(host)
-        self._create_indices()
-        logger.info("Elasticsearch connected")
+        self.es = None
+        self._host = host
+        self._connect()
+
+    def _connect(self):
+        try:
+            self.es = Elasticsearch(self._host, request_timeout=5)
+            self._create_indices()
+            logger.info("Elasticsearch connected")
+        except Exception as e:
+            logger.warning(f"Elasticsearch unavailable — running without ES logging: {e}")
+            self.es = None
 
     def _create_indices(self):
-        for name, index in INDICES.items():
-            if not self.es.indices.exists(index=index):
-                self.es.indices.create(index=index, mappings=MAPPINGS["mappings"])
-                logger.info(f"Created index: {index}")
+        if not self.es:
+            return
+        for index in ["immunex_alerts", "immunex_incidents", "immunex_playbooks"]:
+            try:
+                if not self.es.indices.exists(index=index):
+                    self.es.indices.create(index=index)
+            except Exception as e:
+                logger.warning(f"Could not create index {index}: {e}")
 
-    def index_alert(self, alert: dict, index_key="alerts"):
-        index = INDICES.get(index_key, index_key)
-        alert["@timestamp"] = datetime.utcnow().isoformat()
-        self.es.index(index=index, document=alert)
+    def _ensure_connected(self):
+        if self.es is None:
+            self._connect()
+        return self.es is not None
 
-    def index_incident(self, incident: dict):
-        incident["@timestamp"] = datetime.utcnow().isoformat()
-        self.es.index(index=INDICES["incidents"], document=incident)
+    def index_alert(self, doc: dict):
+        if not self._ensure_connected():
+            return False
+        try:
+            self.es.index(index="immunex_alerts", document=doc)
+            return True
+        except Exception as e:
+            logger.warning(f"ES index_alert failed: {e}")
+            self.es = None
+            return False
 
-    def search_similar(self, attack_type: str, limit=10):
-        result = self.es.search(
-            index=INDICES["incidents"],
-            query={"match": {"attack_type": attack_type}},
-            sort=[{"@timestamp": {"order": "desc", "unmapped_type": "date"}}],
-            size=limit
-        )
-        return [h["_source"] for h in result["hits"]["hits"]]
+    def index_incident(self, doc: dict):
+        if not self._ensure_connected():
+            return False
+        try:
+            self.es.index(index="immunex_incidents", document=doc)
+            return True
+        except Exception as e:
+            logger.warning(f"ES index_incident failed: {e}")
+            self.es = None
+            return False
 
-    def get_recent(self, minutes=60, limit=100):
-        result = self.es.search(
-            index=INDICES["alerts"],
-            query={"range": {"@timestamp": {"gte": f"now-{minutes}m"}}},
-            sort=[{"@timestamp": {"order": "desc", "unmapped_type": "date"}}],
-            size=limit
-        )
-        return [h["_source"] for h in result["hits"]["hits"]]
+    def index_playbook(self, doc: dict):
+        if not self._ensure_connected():
+            return False
+        try:
+            self.es.index(index="immunex_playbooks", document=doc)
+            return True
+        except Exception as e:
+            logger.warning(f"ES index_playbook failed: {e}")
+            self.es = None
+            return False
+
+    def search(self, index: str, query: dict) -> list:
+        if not self._ensure_connected():
+            return []
+        try:
+            r = self.es.search(index=index, body=query)
+            return [h["_source"] for h in r["hits"]["hits"]]
+        except Exception as e:
+            logger.warning(f"ES search failed: {e}")
+            return []

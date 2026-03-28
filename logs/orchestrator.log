@@ -1,13 +1,16 @@
-INFO:     Started server process [65799]
+INFO:     Started server process [24741]
 INFO:     Waiting for application startup.
 INFO:kafka.conn:<BrokerConnection client_id=kafka-python-producer-1, node_id=bootstrap-0 host=localhost:9092 <connecting> [IPv6 ('::1', 9092, 0, 0)]>: connecting to localhost:9092 [('::1', 9092, 0, 0) IPv6]
 INFO:kafka.conn:<BrokerConnection client_id=kafka-python-producer-1, node_id=bootstrap-0 host=localhost:9092 <checking_api_versions_recv> [IPv6 ('::1', 9092, 0, 0)]>: Broker version identified as 2.6
 INFO:kafka.conn:<BrokerConnection client_id=kafka-python-producer-1, node_id=bootstrap-0 host=localhost:9092 <connected> [IPv6 ('::1', 9092, 0, 0)]>: Connection complete.
 INFO:shared.kafka_client:Kafka producer connected
 INFO:shared.redis_client:Redis connected
-INFO:elastic_transport.transport:HEAD http://localhost:9200/immunex_logs [status:200 duration:0.033s]
-INFO:elastic_transport.transport:HEAD http://localhost:9200/immunex_incidents [status:200 duration:0.001s]
-INFO:elastic_transport.transport:HEAD http://localhost:9200/immunex_alerts [status:200 duration:0.001s]
+INFO:elastic_transport.transport:HEAD http://localhost:9200/immunex_alerts [status:404 duration:0.032s]
+INFO:elastic_transport.transport:PUT http://localhost:9200/immunex_alerts [status:200 duration:0.219s]
+INFO:elastic_transport.transport:HEAD http://localhost:9200/immunex_incidents [status:404 duration:0.001s]
+INFO:elastic_transport.transport:PUT http://localhost:9200/immunex_incidents [status:200 duration:0.175s]
+INFO:elastic_transport.transport:HEAD http://localhost:9200/immunex_playbooks [status:404 duration:0.001s]
+INFO:elastic_transport.transport:PUT http://localhost:9200/immunex_playbooks [status:200 duration:0.162s]
 INFO:shared.es_client:Elasticsearch connected
 INFO:orchestrator:Orchestrator started
 INFO:orchestrator:Layer endpoints: {1: 'http://localhost:8001', 2: 'http://localhost:8002', 3: 'http://localhost:8003', 4: 'http://localhost:8004', 5: 'http://localhost:8005'}
@@ -18,13 +21,13 @@ INFO:httpx:HTTP Request: GET http://localhost:8002/health "HTTP/1.1 200 OK"
 INFO:httpx:HTTP Request: GET http://localhost:8003/health "HTTP/1.1 200 OK"
 INFO:httpx:HTTP Request: GET http://localhost:8004/health "HTTP/1.1 200 OK"
 INFO:httpx:HTTP Request: GET http://localhost:8005/health "HTTP/1.1 200 OK"
-INFO:     127.0.0.1:34378 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58162 - "GET /health HTTP/1.1" 200 OK
 INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
 INFO:httpx:HTTP Request: GET http://localhost:8002/health "HTTP/1.1 200 OK"
 INFO:httpx:HTTP Request: GET http://localhost:8003/health "HTTP/1.1 200 OK"
 INFO:httpx:HTTP Request: GET http://localhost:8004/health "HTTP/1.1 200 OK"
 INFO:httpx:HTTP Request: GET http://localhost:8005/health "HTTP/1.1 200 OK"
-INFO:     127.0.0.1:34392 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58176 - "GET /health HTTP/1.1" 200 OK
 INFO:httpx:HTTP Request: POST http://localhost:8001/detect "HTTP/1.1 200 OK"
 INFO:orchestrator:Layer 1 /detect: OK
 INFO:httpx:HTTP Request: POST http://localhost:8004/predict "HTTP/1.1 200 OK"
@@ -40,5 +43,5 @@ INFO:kafka.conn:<BrokerConnection client_id=kafka-python-producer-1, node_id=1 h
 INFO:kafka.conn:<BrokerConnection client_id=kafka-python-producer-1, node_id=bootstrap-0 host=localhost:9092 <connected> [IPv6 ('::1', 9092, 0, 0)]>: Closing connection. 
 WARNING:kafka.cluster:Topic immunex_playbooks is not available during auto-create initialization
 INFO:shared.kafka_client:Sent to immunex_playbooks partition 0 offset 0
-INFO:elastic_transport.transport:POST http://localhost:9200/immunex_incidents/_doc [status:201 duration:0.040s]
-INFO:     127.0.0.1:57916 - "POST /demo/inject HTTP/1.1" 200 OK
+INFO:elastic_transport.transport:POST http://localhost:9200/immunex_incidents/_doc [status:201 duration:0.075s]
+INFO:     127.0.0.1:60410 - "POST /demo/inject HTTP/1.1" 200 OK

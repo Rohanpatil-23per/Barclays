@@ -122,8 +122,17 @@ def train_bilstm_tracker(
 
     # 1. Load Dataset
     df = pd.read_csv(csv_path)
+
+    # ── Exfil boost: cluster Backdoor/Shellcode so sliding windows get class-4 labels
+    exfil_df = df[df['attack_cat'].isin(['Backdoor', 'Backdoors', 'Shellcode'])]
+    non_exfil_df = df[~df['attack_cat'].isin(['Backdoor', 'Backdoors', 'Shellcode'])]
+    repeat = max(3, (30 * 50) // max(len(exfil_df), 1) + 3)
+    df = pd.concat([non_exfil_df] + [exfil_df] * repeat, ignore_index=True)
+    print(f"Loaded {len(non_exfil_df) + len(exfil_df)} telemetry events.")
+    print(f" > Exfil boost: {len(exfil_df)} rows repeated {repeat}x → {len(exfil_df)*repeat} rows appended")
+    print(f" > New dataset size: {len(df)}")
+
     events = df.to_dict('records')
-    print(f"Loaded {len(df)} telemetry events.")
 
     # 2. Build stage labels for the ENTIRE dataset (vectorized)
     all_stages = df['attack_cat'].fillna('Normal').astype(str).str.strip().map(

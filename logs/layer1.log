@@ -1,106 +1,22 @@
-INFO:     Started server process [64854]
+INFO:     Started server process [24102]
 INFO:     Waiting for application startup.
 Loading models on cuda...
-Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 10801.47it/s]
-Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 11054.58it/s]
-ERROR:    Traceback (most recent call last):
-  File "/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/urllib3/connectionpool.py", line 787, in urlopen
-    response = self._make_request(
-               ^^^^^^^^^^^^^^^^^^^
-  File "/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/urllib3/connectionpool.py", line 534, in _make_request
-    response = conn.getresponse()
-               ^^^^^^^^^^^^^^^^^^
-  File "/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/urllib3/connection.py", line 571, in getresponse
-    httplib_response = super().getresponse()
-                       ^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/lib64/python3.11/http/client.py", line 1415, in getresponse
-    response.begin()
-  File "/usr/lib64/python3.11/http/client.py", line 330, in begin
-    version, status, reason = self._read_status()
-                              ^^^^^^^^^^^^^^^^^^^
-  File "/usr/lib64/python3.11/http/client.py", line 291, in _read_status
-    line = str(self.fp.readline(_MAXLINE + 1), "iso-8859-1")
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/lib64/python3.11/socket.py", line 718, in readinto
-    return self._sock.recv_into(b)
-           ^^^^^^^^^^^^^^^^^^^^^^^
-ConnectionResetError: [Errno 104] Connection reset by peer
-
-During handling of the above exception, another exception occurred:
-
-Traceback (most recent call last):
-  File "/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/elastic_transport/_node/_http_urllib3.py", line 167, in perform_request
-    response = self.pool.urlopen(
-               ^^^^^^^^^^^^^^^^^^
-  File "/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/urllib3/connectionpool.py", line 841, in urlopen
-    retries = retries.increment(
-              ^^^^^^^^^^^^^^^^^^
-  File "/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/urllib3/util/retry.py", line 465, in increment
-    raise reraise(type(error), error, _stacktrace)
-          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/urllib3/util/util.py", line 38, in reraise
-    raise value.with_traceback(tb)
-  File "/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/urllib3/connectionpool.py", line 787, in urlopen
-    response = self._make_request(
-               ^^^^^^^^^^^^^^^^^^^
-  File "/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/urllib3/connectionpool.py", line 534, in _make_request
-    response = conn.getresponse()
-               ^^^^^^^^^^^^^^^^^^
-  File "/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/urllib3/connection.py", line 571, in getresponse
-    httplib_response = super().getresponse()
-                       ^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/lib64/python3.11/http/client.py", line 1415, in getresponse
-    response.begin()
-  File "/usr/lib64/python3.11/http/client.py", line 330, in begin
-    version, status, reason = self._read_status()
-                              ^^^^^^^^^^^^^^^^^^^
-  File "/usr/lib64/python3.11/http/client.py", line 291, in _read_status
-    line = str(self.fp.readline(_MAXLINE + 1), "iso-8859-1")
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/lib64/python3.11/socket.py", line 718, in readinto
-    return self._sock.recv_into(b)
-           ^^^^^^^^^^^^^^^^^^^^^^^
-urllib3.exceptions.ProtocolError: ('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer'))
-
-The above exception was the direct cause of the following exception:
-
-Traceback (most recent call last):
-  File "/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/starlette/routing.py", line 694, in lifespan
-    async with self.lifespan_context(app) as maybe_state:
-  File "/usr/lib64/python3.11/contextlib.py", line 210, in __aenter__
-    return await anext(self.gen)
-           ^^^^^^^^^^^^^^^^^^^^^
-  File "/home/aditya/Documents/hoh/Barclays/layer1_detection/server.py", line 76, in lifespan
-    state["es"]     = IMMUNEXElastic()
-                      ^^^^^^^^^^^^^^^^
-  File "/home/aditya/Documents/hoh/Barclays/shared/es_client.py", line 34, in __init__
-    self._create_indices()
-  File "/home/aditya/Documents/hoh/Barclays/shared/es_client.py", line 39, in _create_indices
-    if not self.es.indices.exists(index=index):
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/elasticsearch/_sync/client/utils.py", line 402, in wrapped
-    return api(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^
-  File "/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/elasticsearch/_sync/client/indices.py", line 1100, in exists
-    return self.perform_request(  # type: ignore[return-value]
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/elasticsearch/_sync/client/_base.py", line 389, in perform_request
-    return self._client.perform_request(
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/elasticsearch/_sync/client/_base.py", line 285, in perform_request
-    meta, resp_body = self.transport.perform_request(
-                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/elastic_transport/_transport.py", line 342, in perform_request
-    resp = node.perform_request(
-           ^^^^^^^^^^^^^^^^^^^^^
-  File "/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/elastic_transport/_node/_http_urllib3.py", line 202, in perform_request
-    raise err from e
-elastic_transport.ConnectionError: Connection error caused by: ConnectionError(Connection error caused by: ProtocolError(('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer'))))
-
-ERROR:    Application startup failed. Exiting.
-INFO:     127.0.0.1:40962 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:42492 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:42492 - "GET /health HTTP/1.1" 200 OK
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 15541.62it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 11502.53it/s]
+Could not create index immunex_alerts: Connection error caused by: ConnectionError(Connection error caused by: ProtocolError(('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer'))))
+Could not create index immunex_incidents: Connection error caused by: ConnectionError(Connection error caused by: ProtocolError(('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer'))))
+Could not create index immunex_playbooks: Connection error caused by: ConnectionError(Connection error caused by: ProtocolError(('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer'))))
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+All models loaded ✅
+  CICIDS RoBERTa: models/roberta_layer1
+  UNSW RoBERTa:   models/roberta_unsw
+  Isolation Forest: loaded
+  FAISS GPU index: 20030 vectors
+  Kafka/Redis/ES:  connected
+INFO:     127.0.0.1:41742 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43544 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43544 - "GET /health HTTP/1.1" 200 OK
 /home/aditya/.venvs/immunex/lib64/python3.11/site-packages/sklearn/utils/validation.py:2691: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
   warnings.warn(
 [Parallel(n_jobs=1)]: Done  49 tasks      | elapsed:    0.0s
@@ -108,4 +24,4 @@ INFO:     127.0.0.1:42492 - "GET /health HTTP/1.1" 200 OK
 [Parallel(n_jobs=1)]: Done 200 out of 200 | elapsed:    0.0s finished
 /home/aditya/.venvs/immunex/lib64/python3.11/site-packages/sklearn/utils/validation.py:2691: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
   warnings.warn(
-INFO:     127.0.0.1:49288 - "POST /detect HTTP/1.1" 200 OK
+INFO:     127.0.0.1:44750 - "POST /detect HTTP/1.1" 200 OK
