@@ -307,6 +307,8 @@ def stats():
         "kafka_topics":  ["immunex_raw_alerts", "immunex_anomaly_results",
                           "immunex_attack_graphs", "immunex_responses", "immunex_playbooks"],
     }
+from layer1_detection.batch_endpoint import create_batch_detect_endpoint
+create_batch_detect_endpoint(app, state)
 
 if __name__ == "__main__":
     import uvicorn

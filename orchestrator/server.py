@@ -14,6 +14,7 @@ from shared.schemas import Alert, AnomalyResult, AttackGraph, ResponseAction, Pl
 from shared.kafka_client import IMMUNEXProducer
 from shared.redis_client import IMMUNEXCache
 from shared.es_client import IMMUNEXElastic
+from orchestrator.ingest_api import router as ingest_router, init_ingest
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("orchestrator")
@@ -66,6 +67,7 @@ async def lifespan(app: FastAPI):
     for num, urls in LAYER_URLS.items():
         _active_url[num] = urls[0]
     logger.info("Orchestrator started")
+    init_ingest(state)
     logger.info(f"Layer primary URLs: { {k: v[0] for k,v in LAYER_URLS.items()} }")
     yield
     await state["http"].aclose()
@@ -74,6 +76,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="IMMUNEX Orchestrator", version="2.0", lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+app.include_router(ingest_router)
 
 # ── Call layer with automatic failover ───────────────────────────────────────
 async def call_layer(layer_num: int, endpoint: str, payload: dict) -> Optional[dict]:

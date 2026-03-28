@@ -25,7 +25,7 @@ class FAISSIndex:
     High distance from normal = anomaly.
     """
 
-    def __init__(self, use_gpu=True):
+    def __init__(self, use_gpu=False):  # CPU-only: GPU FAISS crashes under concurrent load
         self.dimension  = DIMENSION
         self.index      = None
         self.metadata   = []   # list of dicts per embedding
