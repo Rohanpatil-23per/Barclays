@@ -18,16 +18,43 @@ from shared.es_client import IMMUNEXElastic
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("orchestrator")
 
-LAYERS = {
-    1: os.getenv("LAYER1_URL", "http://localhost:8001"),
-    2: os.getenv("LAYER2_URL", "http://localhost:8002"),
-    3: os.getenv("LAYER3_URL", "http://localhost:8003"),
-    4: os.getenv("LAYER4_URL", "http://localhost:8004"),
-    5: os.getenv("LAYER5_URL", "http://localhost:8005"),
+# ── Layer URLs with fallbacks ─────────────────────────────────────────────────
+# Primary → Fallback order follows GPU power ranking
+LAYER_URLS = {
+    1: [
+        os.getenv("LAYER1_URL",    "http://localhost:8001"),
+    ],
+    2: [
+        os.getenv("LAYER2_URL",    "http://10.0.0.2:8002"),   # Acer Nitro 4050
+        os.getenv("LAYER2_FB1",    "http://10.0.0.3:8002"),   # Lenovo LOQ 3050
+        os.getenv("LAYER2_FB2",    "http://10.0.0.4:8002"),   # HP Victus 2050
+        os.getenv("LAYER2_FB3",    "http://localhost:8002"),   # your machine last
+    ],
+    3: [
+        os.getenv("LAYER3_URL",    "http://10.0.0.3:8003"),   # Lenovo LOQ 3050
+        os.getenv("LAYER3_FB1",    "http://10.0.0.2:8003"),   # Acer Nitro 4050
+        os.getenv("LAYER3_FB2",    "http://10.0.0.4:8003"),   # HP Victus 2050
+        os.getenv("LAYER3_FB3",    "http://localhost:8003"),
+    ],
+    4: [
+        os.getenv("LAYER4_URL",    "http://10.0.0.4:8004"),   # HP Victus 2050
+        os.getenv("LAYER4_FB1",    "http://10.0.0.5:8004"),   # HP Pavilion 1650
+        os.getenv("LAYER4_FB2",    "http://10.0.0.2:8004"),   # Acer Nitro 4050
+        os.getenv("LAYER4_FB3",    "http://localhost:8004"),
+    ],
+    5: [
+        os.getenv("LAYER5_URL",    "http://10.0.0.5:8005"),   # HP Pavilion 1650
+        os.getenv("LAYER5_FB1",    "http://10.0.0.3:8005"),   # Lenovo LOQ 3050
+        os.getenv("LAYER5_FB2",    "http://10.0.0.2:8005"),   # Acer Nitro 4050
+        os.getenv("LAYER5_FB3",    "http://localhost:8005"),
+    ],
 }
-TIMEOUT = 30.0
 
+TIMEOUT = 30.0
 state = {}
+
+# ── Track which URL is currently active per layer ────────────────────────────
+_active_url: dict = {}
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -35,84 +62,103 @@ async def lifespan(app: FastAPI):
     state["redis"] = IMMUNEXCache()
     state["es"]    = IMMUNEXElastic()
     state["http"]  = httpx.AsyncClient(timeout=TIMEOUT)
+    # Initialize active URLs to primary
+    for num, urls in LAYER_URLS.items():
+        _active_url[num] = urls[0]
     logger.info("Orchestrator started")
-    logger.info(f"Layer endpoints: {LAYERS}")
+    logger.info(f"Layer primary URLs: { {k: v[0] for k,v in LAYER_URLS.items()} }")
     yield
     await state["http"].aclose()
     state["kafka"].close()
     logger.info("Orchestrator shutdown")
 
-app = FastAPI(title="IMMUNEX Orchestrator", version="1.0", lifespan=lifespan)
+app = FastAPI(title="IMMUNEX Orchestrator", version="2.0", lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
+# ── Call layer with automatic failover ───────────────────────────────────────
 async def call_layer(layer_num: int, endpoint: str, payload: dict) -> Optional[dict]:
-    url = f"{LAYERS[layer_num]}{endpoint}"
-    try:
-        r = await state["http"].post(url, json=payload)
-        r.raise_for_status()
-        logger.info(f"Layer {layer_num} {endpoint}: OK")
-        return r.json()
-    except httpx.ConnectError:
-        logger.warning(f"Layer {layer_num} OFFLINE — skipping {endpoint}")
-        return None
-    except httpx.TimeoutException:
-        logger.warning(f"Layer {layer_num} TIMEOUT — skipping {endpoint}")
-        return None
-    except Exception as e:
-        logger.error(f"Layer {layer_num} ERROR: {e}")
-        return None
+    urls = LAYER_URLS[layer_num]
+    for url in urls:
+        full_url = f"{url}{endpoint}"
+        try:
+            r = await state["http"].post(full_url, json=payload)
+            r.raise_for_status()
+            if url != _active_url[layer_num]:
+                logger.warning(f"Layer {layer_num} FAILOVER active: {url}")
+                _active_url[layer_num] = url
+            else:
+                logger.info(f"Layer {layer_num} {endpoint}: OK ({url})")
+            return r.json()
+        except httpx.ConnectError:
+            logger.warning(f"Layer {layer_num} OFFLINE at {url} — trying next")
+            continue
+        except httpx.TimeoutException:
+            logger.warning(f"Layer {layer_num} TIMEOUT at {url} — trying next")
+            continue
+        except Exception as e:
+            logger.error(f"Layer {layer_num} ERROR at {url}: {e}")
+            continue
+    logger.error(f"Layer {layer_num} ALL URLS FAILED — layer completely down")
+    return None
 
-async def check_layer_health(layer_num: int) -> bool:
-    url = f"{LAYERS[layer_num]}/health"
-    try:
-        r = await state["http"].get(url, timeout=3.0)
-        return r.status_code == 200
-    except:
-        return False
+async def check_layer_health(layer_num: int) -> dict:
+    urls = LAYER_URLS[layer_num]
+    for url in urls:
+        try:
+            r = await state["http"].get(f"{url}/health", timeout=3.0)
+            if r.status_code == 200:
+                return {"online": True, "active_url": url}
+        except:
+            continue
+    return {"online": False, "active_url": None}
 
 @app.get("/health")
 async def health():
     layer_status = {}
-    for num in LAYERS:
-        layer_status[f"layer{num}"] = await check_layer_health(num)
+    for num in LAYER_URLS:
+        status = await check_layer_health(num)
+        layer_status[f"layer{num}"] = status["online"]
     return {
-        "status":     "ok",
-        "service":    "orchestrator",
-        "port":       8000,
-        "layers":     layer_status,
-        "all_online": all(layer_status.values()),
+        "status":      "ok",
+        "service":     "orchestrator",
+        "port":        8000,
+        "layers":      layer_status,
+        "all_online":  all(layer_status.values()),
+        "active_urls": _active_url,
     }
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# RELEVANCE / SIGNAL QUALITY FILTER
-# Runs before any downstream processing to drop noise, duplicates, and
-# low-quality signals that would waste GPU compute and pollute retraining data.
-# ═══════════════════════════════════════════════════════════════════════════════
+@app.get("/mesh/status")
+async def mesh_status():
+    """Show full mesh status — which URL is active per layer and all fallbacks."""
+    result = {}
+    for num, urls in LAYER_URLS.items():
+        layer_result = []
+        for url in urls:
+            try:
+                r = await state["http"].get(f"{url}/health", timeout=2.0)
+                online = r.status_code == 200
+            except:
+                online = False
+            layer_result.append({"url": url, "online": online,
+                                  "active": url == _active_url[num]})
+        result[f"layer{num}"] = layer_result
+    return result
 
-_seen_alerts: dict = {}   # alert_hash → timestamp, for dedup within 60s
-_DEDUP_WINDOW = 60        # seconds
+# ── Relevance filter ──────────────────────────────────────────────────────────
+_seen_alerts: dict = {}
+_DEDUP_WINDOW = 60
 
 def relevance_filter(l1: dict, alert) -> dict:
-    """
-    Returns a dict with keys:
-      - pass: bool          — whether to continue pipeline
-      - reason: str         — why it was dropped (if pass=False)
-      - quality: str        — "high" / "medium" / "low" / "novel"
-      - retrain_eligible: bool  — safe to use for L4 retraining
-      - playbook_eligible: bool — worth generating L5 playbook
-    """
-    score     = l1.get("anomaly_score", 0)
-    conf      = l1.get("confidence", 0)
-    method    = l1.get("detection_method", "")
-    src_ip    = l1.get("source_ip", "")
-    attack    = l1.get("attack_type", "")
+    score  = l1.get("anomaly_score", 0)
+    conf   = l1.get("confidence", 0)
+    method = l1.get("detection_method", "")
+    src_ip = l1.get("source_ip", "")
+    attack = l1.get("attack_type", "")
 
-    # ── 1. Hard drop: score too low to be meaningful ─────────────────────────
     if score < 0.3:
-        return {"pass": False, "reason": "anomaly_score_below_threshold",
+        return {"pass": False, "reason": "score_below_threshold",
                 "quality": "noise", "retrain_eligible": False, "playbook_eligible": False}
 
-    # ── 2. Deduplication: same source IP + attack type within 60s ────────────
     dedup_key = hashlib.md5(f"{src_ip}:{attack}".encode()).hexdigest()
     now = _time.time()
     if dedup_key in _seen_alerts:
@@ -121,31 +167,22 @@ def relevance_filter(l1: dict, alert) -> dict:
                     "quality": "duplicate", "retrain_eligible": False, "playbook_eligible": False}
     _seen_alerts[dedup_key] = now
 
-    # ── 3. Novel attack: low RoBERTa conf but high anomaly score ─────────────
     if "novel_flag" in method or attack == "Unknown_Novel_Attack":
         return {"pass": True, "reason": "novel_attack_detected",
-                "quality": "novel", "retrain_eligible": False,  # don't auto-retrain unknowns
-                "playbook_eligible": True}  # but DO generate playbook — SOC needs to know
+                "quality": "novel", "retrain_eligible": False, "playbook_eligible": True}
 
-    # ── 4. High quality: both models agree ───────────────────────────────────
     if score >= 0.7 and conf >= 0.5:
         return {"pass": True, "reason": "high_confidence_detection",
                 "quality": "high", "retrain_eligible": True, "playbook_eligible": True}
 
-    # ── 5. Medium quality: iso/faiss caught it but classifier uncertain ───────
-    if score >= 0.5 and conf < 0.5:
-        return {"pass": True, "reason": "statistical_detection_only",
-                "quality": "medium", "retrain_eligible": False,  # uncertain, don't retrain
-                "playbook_eligible": True}
+    if score >= 0.5:
+        return {"pass": True, "reason": "statistical_detection",
+                "quality": "medium", "retrain_eligible": False, "playbook_eligible": True}
 
-    # ── 6. Low quality: marginal signal ──────────────────────────────────────
-    if score >= 0.3:
-        return {"pass": True, "reason": "marginal_signal",
-                "quality": "low", "retrain_eligible": False, "playbook_eligible": False}
+    return {"pass": True, "reason": "marginal_signal",
+            "quality": "low", "retrain_eligible": False, "playbook_eligible": False}
 
-    return {"pass": False, "reason": "below_all_thresholds",
-            "quality": "noise", "retrain_eligible": False, "playbook_eligible": False}
-
+# ── Pipeline ──────────────────────────────────────────────────────────────────
 @app.post("/pipeline/run")
 async def run_pipeline(alert: Alert):
     pipeline_id = str(uuid.uuid4())
@@ -163,15 +200,11 @@ async def run_pipeline(alert: Alert):
         "playbook":     None,
     }
 
-    # Layer 1: Detection
-    l1 = await call_layer(1, "/detect", alert.dict())
+    # Layer 1
+    l1 = await call_layer(1, "/detect", alert.model_dump())
     result["layer1"] = l1
     if not l1:
-        result["error"] = "Layer 1 offline — cannot proceed"
-        return result
-
-    if not l1.get("embedding"):
-        result["error"] = "Layer 1 returned no embedding"
+        result["error"] = "Layer 1 offline"
         return result
 
     if not l1.get("is_anomalous", False):
@@ -183,27 +216,24 @@ async def run_pipeline(alert: Alert):
     result["verdict"]       = "ANOMALOUS"
     result["anomaly_score"] = l1.get("anomaly_score", 0)
 
-    # ── Relevance filter ────────────────────────────────────────────────────
     rf = relevance_filter(l1, alert)
     if not rf.get("pass"):
-        result["verdict"]  = "FILTERED"
-        result["reason"]   = rf.get("reason")
-        result["quality"]  = rf.get("quality")
+        result["verdict"] = "FILTERED"
+        result["reason"]  = rf.get("reason")
+        result["quality"] = rf.get("quality")
         _log_to_es(result, alert)
         return result
 
-    # Layer 2 + 4 in parallel
+    # L2 + L4 in parallel
     l2_payload = {
         "alert_id":       l1["alert_id"],
-        "timestamp":      l1["timestamp"],
-        "source_ip":      l1["source_ip"],
-        "dest_ip":        l1["dest_ip"],
-        "attack_type":    l1["attack_type"],
+        "timestamp":      l1.get("timestamp", ""),
+        "source_ip":      l1.get("source_ip", ""),
+        "dest_ip":        l1.get("dest_ip", ""),
+        "attack_type":    l1.get("attack_type", ""),
         "anomaly_score":  l1["anomaly_score"],
         "feature_vector": l1["embedding"],
     }
-    # Use raw CICIDS scaled features for L4 (semantically correct)
-    # Fall back to embedding slice only if cicids_features not present
     _l4_feats = l1.get("cicids_features") or l1["embedding"][:25]
     if len(_l4_feats) < 25:
         _l4_feats = _l4_feats + [0.0] * (25 - len(_l4_feats))
@@ -215,76 +245,74 @@ async def run_pipeline(alert: Alert):
     )
     result["layer2"] = l2
     result["layer4"] = l4
+
     if l2:
         l3_payload = {
             "alert_id":          l1["alert_id"],
-            "timestamp":         l1["timestamp"],
-            "source_ip":         l1["source_ip"],
-            "destination_ip": l1["dest_ip"],
-            "dest_ip": l1["dest_ip"],
+            "timestamp":         l1.get("timestamp", ""),
+            "source_ip":         l1.get("source_ip", ""),
+            "destination_ip":    l1.get("dest_ip", ""),
+            "dest_ip":           l1.get("dest_ip", ""),
             "source_port":       0,
             "destination_port":  0,
             "protocol":          "TCP",
-            "severity":          "critical" if l1["anomaly_score"] > 0.7 else "high" if l1["anomaly_score"] > 0.4 else "medium",
-            "attack_type":       l1["attack_type"],
+            "severity":          "critical" if l1["anomaly_score"] > 0.7 else "high",
+            "attack_type":       l1.get("attack_type", ""),
             "feature_vector":    l1["embedding"],
             "layer2_confidence": l2.get("confidence", 0.5),
         }
         l3 = await call_layer(3, "/respond", l3_payload)
-        result["layer3"]       = l3
-        # Normalize L3 response
-        if not l3.get("action"):
-            l3["action"] = l3.get("primary_action") or \
-                           (l3.get("actions") or [None])[0] or "monitor"
-        result["final_action"] = l3
+        result["layer3"] = l3
+        if l3:
+            if not l3.get("action"):
+                l3["action"] = l3.get("primary_action") or \
+                               (l3.get("actions") or [None])[0] or "monitor"
+            result["final_action"] = l3
+        else:
+            result["final_action"] = {
+                "chain_id": pipeline_id, "action": "monitor",
+                "target_ip": alert.source_ip or "", "verified_safe": True,
+                "q_value": 0.5, "fallback": True,
+            }
     else:
         result["layer3"]       = None
         result["final_action"] = {
-            "chain_id":      pipeline_id,
-            "action":        "monitor",
-            "target_ip":     alert.source_ip,
-            "verified_safe": True,
-            "q_value":       0.5,
-            "fallback":      True,
+            "chain_id": pipeline_id, "action": "monitor",
+            "target_ip": alert.source_ip or "", "verified_safe": True,
+            "q_value": 0.5, "fallback": True,
         }
-        logger.warning("Layer 2 offline — using fallback response action")
 
-    # Layer 5: Explain + Playbook
-    l5_payload = result["final_action"] or {
-        "chain_id":      pipeline_id,
-        "action":        "monitor",
-        "target_ip":     alert.source_ip,
-        "verified_safe": True,
-        "q_value":       0.5,
-    }
-    # ── Gate L4 retraining on signal quality ────────────────────────────────
+    # L4 retrain gate
     if rf.get("retrain_eligible") and l4 and l4.get("success"):
         try:
             await call_layer(4, "/retrain", {
                 "features": _l4_feats,
                 "label":    l1.get("attack_type", "unknown"),
             })
-            logger.info(f"L4 retrain triggered for high-quality signal: {l1.get('attack_type')}")
         except Exception as e:
             logger.warning(f"L4 retrain skipped: {e}")
 
-    # ── Gate L5 playbook on playbook_eligible ────────────────────────────────
+    # L5 playbook gate
     if not rf.get("playbook_eligible"):
         result["layer5"]   = None
-        result["playbook"] = {"incident_id": pipeline_id, "attack_summary": "Low quality signal — playbook suppressed",
-                               "steps": [], "predicted_next": "unknown", "confidence": 0.0}
+        result["playbook"] = {
+            "incident_id": pipeline_id,
+            "attack_summary": "Low quality signal — playbook suppressed",
+            "steps": [], "predicted_next": "unknown", "confidence": 0.0,
+        }
+        _log_to_es(result, alert)
         return result
 
+    l5_payload = result["final_action"]
     l5 = await call_layer(5, "/explain", l5_payload)
     if l5 and not l5.get("predicted_next") and l5.get("predicted_threats"):
         l5["predicted_next"] = l5["predicted_threats"][0]
     result["layer5"] = l5
 
     if not l5:
-        logger.warning("Layer 5 offline — generating playbook from Layer 1 Ollama")
         try:
             ollama_r = await state["http"].post(
-                f"{LAYERS[1]}/generate-playbook",
+                f"{LAYER_URLS[1][0]}/generate-playbook",
                 json={
                     "prompt": "Generate a 3-step incident response playbook.",
                     "context": {
@@ -325,11 +353,9 @@ async def run_pipeline(alert: Alert):
         "verdict":       result["verdict"],
         "anomaly_score": result["anomaly_score"],
         "layers_online": {
-            "l1": l1 is not None,
-            "l2": l2 is not None,
+            "l1": l1 is not None, "l2": l2 is not None,
             "l3": result["layer3"] is not None,
-            "l4": l4 is not None,
-            "l5": l5 is not None,
+            "l4": l4 is not None, "l5": l5 is not None,
         }
     })
 
@@ -339,24 +365,17 @@ async def run_pipeline(alert: Alert):
 
 @app.post("/demo/inject")
 async def demo_inject():
-    """Inject a realistic Zeus Banking Trojan alert for demo day."""
-    botnet_features = [-0.7646905574813246, 1.8493171336719367, 0.1360842597127493, -0.038256832829822, -0.2234762935258288, 0.1867425617760749, -0.2887230032189737, -0.3338156024101207, -0.3094501517292162, -0.243075338744169, 4.544640932295218, -0.6642257447173439, 3.1770112733598714, 4.633082888390731, -0.1770146168201649, -0.1587662528427847, 1.1936840927012191, 2.3922403065334, 2.765064551509225, -0.0582008046198575, 1.862034595775524, 0.8855807278018033, 2.6763375243600733, 2.762514242871944, -0.1243816297992087, -0.3613781146589914, -0.2127801830691396, -0.2475923127532377, -0.2842236442106687, -0.122538486443635, -0.1890309835329326, 0.0, 0.0, 0.0, 0.0373291387560878, -0.0817210922126444, -0.1349697802794396, -0.205328179738589, -0.7746180708204594, 4.332156577732468, 2.060003453281091, 3.636782569436395, 3.947944798307136, -0.1742105834718708, -0.1890309835329326, 0.0, -0.5689403351968044, 1.6932962780256324, -0.2973405807608872, 0.0, 0.0, -1.1283890896284317, 2.027611601794204, -0.3094501517292162, 3.1770112733598714, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1360842597127493, -0.2234762935258288, -0.038256832829822, 0.1867425617760749, -0.4425389824504542, -0.2020681797073581, 0.3430337318398583, -0.8167862912590615, 0.4715044104583414, -0.1382837801439019, 0.2060428820616336, 0.5834133109605503, 2.897013722170425, -0.1150629802833818, 2.7933872433630125, 2.946668070457503]
+    botnet_features = [-0.7646905574813246,1.8493171336719367,0.1360842597127493,-0.038256832829822,-0.2234762935258288,0.1867425617760749,-0.2887230032189737,-0.3338156024101207,-0.3094501517292162,-0.243075338744169,4.544640932295218,-0.6642257447173439,3.1770112733598714,4.633082888390731,-0.1770146168201649,-0.1587662528427847,1.1936840927012191,2.3922403065334,2.765064551509225,-0.0582008046198575,1.862034595775524,0.8855807278018033,2.6763375243600733,2.762514242871944,-0.1243816297992087,-0.3613781146589914,-0.2127801830691396,-0.2475923127532377,-0.2842236442106687,-0.122538486443635,-0.1890309835329326,0.0,0.0,0.0,0.0373291387560878,-0.0817210922126444,-0.1349697802794396,-0.205328179738589,-0.7746180708204594,4.332156577732468,2.060003453281091,3.636782569436395,3.947944798307136,-0.1742105834718708,-0.1890309835329326,0.0,-0.5689403351968044,1.6932962780256324,-0.2973405807608872,0.0,0.0,-1.1283890896284317,2.027611601794204,-0.3094501517292162,3.1770112733598714,0.0,0.0,0.0,0.0,0.0,0.0,0.1360842597127493,-0.2234762935258288,-0.038256832829822,0.1867425617760749,-0.4425389824504542,-0.2020681797073581,0.3430337318398583,-0.8167862912590615,0.4715044104583414,-0.1382837801439019,0.2060428820616336,0.5834133109605503,2.897013722170425,-0.1150629802833818,2.7933872433630125,2.946668070457503]
     demo_alert = Alert(
-        alert_id   = f"DEMO-{uuid.uuid4().hex[:8].upper()}",
-        timestamp  = datetime.utcnow().isoformat(),
-        source_ip  = "203.0.113.99",
-        dest_ip    = "192.168.10.50",
-        alert_type = "Zeus_Banking_Trojan",
-        severity   = "critical",
-        features   = botnet_features,
-        text       = "Zeus banking trojan detected port scan from 203.0.113.99",
-        event_type      = "FILE_ACCESS",
-        protocol        = "TCP",
-        port            = 445,
-        username        = "svc_account_03",
-        process         = "powershell.exe",
-        file            = "C:\\finance\\transactions_Q1.xlsx",
-        privilege_level = "admin",
+        alert_id="DEMO-" + uuid.uuid4().hex[:8].upper(),
+        timestamp=datetime.utcnow().isoformat(),
+        source_ip="203.0.113.99", dest_ip="192.168.10.50",
+        alert_type="Zeus_Banking_Trojan", severity="critical",
+        features=botnet_features,
+        text="Zeus banking trojan detected port scan from 203.0.113.99",
+        event_type="FILE_ACCESS", protocol="TCP", port=445,
+        username="svc_account_03", process="powershell.exe",
+        file="C:\\finance\\transactions_Q1.xlsx", privilege_level="admin",
     )
     result = await run_pipeline(demo_alert)
     result["demo"] = True
@@ -365,8 +384,9 @@ async def demo_inject():
 @app.get("/pipeline/status")
 async def pipeline_status():
     layer_status = {}
-    for num in LAYERS:
-        layer_status[num] = await check_layer_health(num)
+    for num in LAYER_URLS:
+        status = await check_layer_health(num)
+        layer_status[num] = status["online"]
     online  = [n for n, up in layer_status.items() if up]
     offline = [n for n, up in layer_status.items() if not up]
     return {
@@ -374,6 +394,7 @@ async def pipeline_status():
         "offline":         offline,
         "ready":           len(online) == 5,
         "layer1_critical": layer_status.get(1, False),
+        "active_urls":     _active_url,
     }
 
 def _log_to_es(result: dict, alert: Alert):
