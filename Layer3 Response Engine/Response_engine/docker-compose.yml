@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  immunex-db:
+    # This specific image comes pre-compiled with the pgvector extension
+    image: pgvector/pgvector:pg16
+    container_name: immunex_postgres
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=secret
+      - POSTGRES_DB=immunex
+    ports:
+      - "5433:5432"
+    volumes:
+      # This ensures your RLHF training data survives if the container restarts
+      - immunex_pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  immunex_pgdata:
