@@ -11,6 +11,7 @@ from dataclasses import dataclass, asdict
 
 import numpy as np
 import torch
+import torch.nn.functional as F
 import structlog
 from stable_baselines3 import DQN
 
@@ -108,6 +109,7 @@ class ResponseEngine:
 
         try:
             self.logger.info("loading_model", path=model_path)
+            self.model_path = model_path
             self.model = DQN.load(model_path)
             self.logger.info("model_loaded_successfully", path=model_path)
         except Exception as exc:
@@ -240,6 +242,112 @@ class ResponseEngine:
         )
 
         return decision
+
+    # ── Online Retraining ──────────────────────────────────────────────────
+
+    def retrain(
+        self,
+        expert_data: list[dict],
+        rejected_data: list[dict],
+        epochs: int = 5,
+        lr: float = 1e-4,
+        neg_weight: float = 1.0
+    ) -> dict:
+        """
+        Performs Behavioral Cloning (BC) on expert demonstrations and penalises
+        rejected demonstrations.
+        """
+        if not expert_data and not rejected_data:
+            return {"status": "no_data", "samples": 0}
+
+        self.logger.info("retraining_started",
+                         expert_samples=len(expert_data),
+                         rejected_samples=len(rejected_data))
+
+        # We need the Q-network and optimizer
+        q_net = self.model.policy.q_net
+        optimizer = torch.optim.Adam(q_net.parameters(), lr=lr)
+
+        # Prepare positive data
+        states_pos, actions_pos = [], []
+        for d in expert_data:
+            try:
+                state = self.validate_feature_vector(d["state_vector"])
+                states_pos.append(state)
+                actions_pos.append(int(d["expert_action"]))
+            except Exception:
+                pass
+
+        # Prepare negative data
+        states_neg, actions_neg = [], []
+        for d in rejected_data:
+            try:
+                state = self.validate_feature_vector(d["state_vector"])
+                states_neg.append(state)
+                actions_neg.append(int(d["rejected_action"]))
+            except Exception:
+                pass
+
+        if not states_pos and not states_neg:
+            return {"status": "failed", "reason": "No valid data after parsing"}
+
+        # Convert to tensors
+        device = self.model.device
+        
+        t_states_pos = torch.as_tensor(np.array(states_pos)).float().to(device) if states_pos else None
+        t_actions_pos = torch.as_tensor(actions_pos).long().to(device) if actions_pos else None
+        
+        t_states_neg = torch.as_tensor(np.array(states_neg)).float().to(device) if states_neg else None
+        t_actions_neg = torch.as_tensor(actions_neg).long().to(device) if actions_neg else None
+
+        q_net.train()
+        total_loss = 0.0
+
+        for epoch in range(epochs):
+            optimizer.zero_grad()
+            loss = torch.tensor(0.0).to(device)
+            
+            # Behavioral cloning loss (CrossEntropy)
+            if t_states_pos is not None:
+                q_values_pos = q_net(t_states_pos)
+                loss_pos = F.cross_entropy(q_values_pos, t_actions_pos)
+                loss += loss_pos
+                
+            # Negative sampling loss (minimize probability of rejected action)
+            if t_states_neg is not None:
+                q_values_neg = q_net(t_states_neg)
+                probs_neg = torch.softmax(q_values_neg, dim=-1)
+                prob_rejected = probs_neg.gather(1, t_actions_neg.unsqueeze(1)).squeeze(1)
+                loss_neg = prob_rejected.mean() * neg_weight
+                loss += loss_neg
+
+            loss.backward()
+            optimizer.step()
+            total_loss += loss.item()
+
+        q_net.eval()
+        avg_loss = total_loss / max(1, epochs)
+        
+        # Save model using SB3's built in mechanism
+        # Find the path it was originally loaded from, or a default
+        try:
+            self.model.save(self.model_path)
+            self.logger.info("retraining_completed",
+                             loss=avg_loss,
+                             saved_path=self.model_path)
+            saved = True
+        except Exception as e:
+            self.logger.error("retraining_save_failed", error=str(e))
+            saved = False
+
+        return {
+            "status": "success",
+            "expert_samples": len(states_pos),
+            "rejected_samples": len(states_neg),
+            "epochs": epochs,
+            "final_loss": float(avg_loss),
+            "saved": saved
+        }
 
 
 # ── Smoke test ─────────────────────────────────────────────────────────────

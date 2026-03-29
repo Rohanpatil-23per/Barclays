@@ -10,6 +10,7 @@ L2_URL="${LAYER2_URL:-http://localhost:8002}"
 L3_URL="${LAYER3_URL:-http://localhost:8003}"
 L4_URL="${LAYER4_URL:-http://localhost:8004}"
 
+
 echo "╔══════════════════════════════════════╗"
 echo "║     IMMUNEX STARTUP SEQUENCE         ║"
 echo "╚══════════════════════════════════════╝"
@@ -144,6 +145,7 @@ echo "[6/6] Starting Orchestrator..."
 LAYER2_URL="$L2_URL" \
 LAYER3_URL="$L3_URL" \
 LAYER4_URL="$L4_URL" \
+
 $VENV/uvicorn orchestrator.server:app --host 0.0.0.0 --port 8000 > "$LOG/orchestrator.log" 2>&1 &
 sleep 8
 curl -s http://localhost:8000/health > /dev/null 2>&1 \
