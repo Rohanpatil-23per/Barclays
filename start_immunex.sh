@@ -106,13 +106,13 @@ start_layer() {
 
 # Layer 1 — always local
 start_layer "Layer 1" \
-    "$VENV/uvicorn layer1_detection.server:app --host 0.0.0.0 --port 8001" \
+    "$VENV/uvicorn layer1_detection.server:app --host 0.0.0.0 --port 8001 --ssl-certfile /home/aditya/Documents/hoh/Barclays/certs/node1.crt --ssl-keyfile /home/aditya/Documents/hoh/Barclays/certs/node1.key --ssl-ca-certs /home/aditya/Documents/hoh/Barclays/certs/ca.crt" \
     8001 "$LOG/layer1.log" 30
 
 # Layers 2-5: only start locally if URL is localhost
 if [[ "$L2_URL" == *"localhost"* ]]; then
     start_layer "Layer 2" \
-        "$VENV/uvicorn layer2_correlation.server:app --host 0.0.0.0 --port 8002" \
+        "$VENV/uvicorn layer2_correlation.server:app --host 0.0.0.0 --port 8002 --ssl-certfile /home/aditya/Documents/hoh/Barclays/certs/node1.crt --ssl-keyfile /home/aditya/Documents/hoh/Barclays/certs/node1.key --ssl-ca-certs /home/aditya/Documents/hoh/Barclays/certs/ca.crt" \
         8002 "$LOG/layer2.log" 20
 else
     echo "  ↗  Layer 2 remote: $L2_URL"
@@ -120,7 +120,7 @@ fi
 
 if [[ "$L3_URL" == *"localhost"* ]]; then
     (cd "Layer3 Response Engine/Response_engine" && \
-     $VENV/uvicorn main:app --host 0.0.0.0 --port 8003 > "../../$LOG/layer3.log" 2>&1 &)
+     $VENV/uvicorn main:app --host 0.0.0.0 --port 8003 --ssl-certfile /home/aditya/Documents/hoh/Barclays/certs/node1.crt --ssl-keyfile /home/aditya/Documents/hoh/Barclays/certs/node1.key --ssl-ca-certs /home/aditya/Documents/hoh/Barclays/certs/ca.crt > "../../$LOG/layer3.log" 2>&1 &)
     sleep 12
     curl -s http://localhost:8003/health > /dev/null 2>&1 \
         && echo "  ✅ Layer 3 running on port 8003" \
@@ -131,7 +131,7 @@ fi
 
 if [[ "$L4_URL" == *"localhost"* ]]; then
     start_layer "Layer 4" \
-        "$VENV/uvicorn layer4_immunity.server:app --host 0.0.0.0 --port 8004" \
+        "$VENV/uvicorn layer4_immunity.server:app --host 0.0.0.0 --port 8004 --ssl-certfile /home/aditya/Documents/hoh/Barclays/certs/node1.crt --ssl-keyfile /home/aditya/Documents/hoh/Barclays/certs/node1.key --ssl-ca-certs /home/aditya/Documents/hoh/Barclays/certs/ca.crt" \
         8004 "$LOG/layer4.log" 15
 else
     echo "  ↗  Layer 4 remote: $L4_URL"
@@ -139,7 +139,7 @@ fi
 
 if [[ "$L5_URL" == *"localhost"* ]]; then
     start_layer "Layer 5" \
-        "$VENV/uvicorn 'Layer5_Threat Memory.server:app' --host 0.0.0.0 --port 8005" \
+        "$VENV/uvicorn 'Layer5_Threat Memory.server:app' --host 0.0.0.0 --port 8005 --ssl-certfile /home/aditya/Documents/hoh/Barclays/certs/node1.crt --ssl-keyfile /home/aditya/Documents/hoh/Barclays/certs/node1.key --ssl-ca-certs /home/aditya/Documents/hoh/Barclays/certs/ca.crt" \
         8005 "$LOG/layer5.log" 15
 else
     echo "  ↗  Layer 5 remote: $L5_URL"
@@ -152,7 +152,7 @@ LAYER2_URL="$L2_URL" \
 LAYER3_URL="$L3_URL" \
 LAYER4_URL="$L4_URL" \
 LAYER5_URL="$L5_URL" \
-$VENV/uvicorn orchestrator.server:app --host 0.0.0.0 --port 8000 > "$LOG/orchestrator.log" 2>&1 &
+$VENV/uvicorn orchestrator.server:app --host 0.0.0.0 --port 8000 --ssl-certfile /home/aditya/Documents/hoh/Barclays/certs/node1.crt --ssl-keyfile /home/aditya/Documents/hoh/Barclays/certs/node1.key --ssl-ca-certs /home/aditya/Documents/hoh/Barclays/certs/ca.crt > "$LOG/orchestrator.log" 2>&1 &
 sleep 8
 curl -s http://localhost:8000/health > /dev/null 2>&1 \
     && echo "  ✅ Orchestrator running on port 8000" \

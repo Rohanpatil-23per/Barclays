@@ -7,6 +7,8 @@ from contextlib import asynccontextmanager
 from typing import Optional
 
 import httpx
+import ssl
+from orchestrator.mtls import get_client_ssl_context
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -26,27 +28,27 @@ LAYER_URLS = {
         os.getenv("LAYER1_URL",    "http://localhost:8001"),
     ],
     2: [
-        os.getenv("LAYER2_URL",    "http://192.168.137.1:8002"),   # Acer Nitro 4050
-        os.getenv("LAYER2_FB1",    "http://192.168.137.213:8002"),   # Lenovo LOQ 3050
-        os.getenv("LAYER2_FB2",    "http://192.168.137.225:8002"),   # HP Victus 2050
+        os.getenv("LAYER2_URL",    "http://10.0.0.2:8002"),   # Acer Nitro 4050
+        os.getenv("LAYER2_FB1",    "http://10.0.0.3:8002"),   # Lenovo LOQ 3050
+        os.getenv("LAYER2_FB2",    "http://10.0.0.4:8002"),   # HP Victus 2050
         os.getenv("LAYER2_FB3",    "http://localhost:8002"),   # your machine last
     ],
     3: [
-        os.getenv("LAYER3_URL",    "http://192.168.137.213:8003"),   # Lenovo LOQ 3050
-        os.getenv("LAYER3_FB1",    "http://192.168.137.1:8003"),   # Acer Nitro 4050
-        os.getenv("LAYER3_FB2",    "http://192.168.137.225:8003"),   # HP Victus 2050
+        os.getenv("LAYER3_URL",    "http://10.0.0.3:8003"),   # Lenovo LOQ 3050
+        os.getenv("LAYER3_FB1",    "http://10.0.0.2:8003"),   # Acer Nitro 4050
+        os.getenv("LAYER3_FB2",    "http://10.0.0.4:8003"),   # HP Victus 2050
         os.getenv("LAYER3_FB3",    "http://localhost:8003"),
     ],
     4: [
-        os.getenv("LAYER4_URL",    "http://192.168.137.225:8004"),   # HP Victus 2050
-        os.getenv("LAYER4_FB1",    "http://192.168.137.244:8004"),   # HP Pavilion 1650
-        os.getenv("LAYER4_FB2",    "http://192.168.137.1:8004"),   # Acer Nitro 4050
+        os.getenv("LAYER4_URL",    "http://10.0.0.4:8004"),   # HP Victus 2050
+        os.getenv("LAYER4_FB1",    "http://10.0.0.5:8004"),   # HP Pavilion 1650
+        os.getenv("LAYER4_FB2",    "http://10.0.0.2:8004"),   # Acer Nitro 4050
         os.getenv("LAYER4_FB3",    "http://localhost:8004"),
     ],
     5: [
-        os.getenv("LAYER5_URL",    "http://192.168.137.244:8005"),   # HP Pavilion 1650
-        os.getenv("LAYER5_FB1",    "http://192.168.137.213:8005"),   # Lenovo LOQ 3050
-        os.getenv("LAYER5_FB2",    "http://192.168.137.1:8005"),   # Acer Nitro 4050
+        os.getenv("LAYER5_URL",    "http://10.0.0.5:8005"),   # HP Pavilion 1650
+        os.getenv("LAYER5_FB1",    "http://10.0.0.3:8005"),   # Lenovo LOQ 3050
+        os.getenv("LAYER5_FB2",    "http://10.0.0.2:8005"),   # Acer Nitro 4050
         os.getenv("LAYER5_FB3",    "http://localhost:8005"),
     ],
 }

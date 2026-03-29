@@ -24,6 +24,9 @@ from datetime import datetime
 from typing import Any, Union
 
 import httpx
+import ssl
+from orchestrator.mtls import get_client_ssl_context
+_mtls_ctx = get_client_ssl_context(node=1)
 from fastapi import APIRouter, BackgroundTasks, HTTPException
 from pydantic import BaseModel
 
@@ -41,10 +44,10 @@ router = APIRouter(prefix="/ingest", tags=["ingest"])
 # Each node runs layer1_detection/server.py with /detect/batch endpoint
 L1_NODES = [
     os.getenv("L1_NODE_1", "http://localhost:8001"),        # Your 4070 (primary)
-    os.getenv("L1_NODE_2", "http://192.168.137.1:8001"),         # Acer Nitro 4050
-    os.getenv("L1_NODE_3", "http://192.168.137.213:8001"),         # Lenovo LOQ 3050
-    os.getenv("L1_NODE_4", "http://192.168.137.225:8001"),         # HP Victus 2050
-    os.getenv("L1_NODE_5", "http://192.168.137.244:8001"),         # HP Pavilion 1650
+    os.getenv("L1_NODE_2", "http://10.0.0.2:8001"),         # Acer Nitro 4050
+    os.getenv("L1_NODE_3", "http://10.0.0.3:8001"),         # Lenovo LOQ 3050
+    os.getenv("L1_NODE_4", "http://10.0.0.4:8001"),         # HP Victus 2050
+    os.getenv("L1_NODE_5", "http://10.0.0.5:8001"),         # HP Pavilion 1650
 ]
 
 # Track which nodes are alive (updated by health checker)
