@@ -1,16 +1,16 @@
-INFO:     Started server process [241819]
+INFO:     Started server process [17723]
 INFO:     Waiting for application startup.
 INFO:kafka.conn:<BrokerConnection client_id=kafka-python-producer-1, node_id=bootstrap-0 host=localhost:9092 <connecting> [IPv6 ('::1', 9092, 0, 0)]>: connecting to localhost:9092 [('::1', 9092, 0, 0) IPv6]
 INFO:kafka.conn:<BrokerConnection client_id=kafka-python-producer-1, node_id=bootstrap-0 host=localhost:9092 <checking_api_versions_recv> [IPv6 ('::1', 9092, 0, 0)]>: Broker version identified as 2.6
 INFO:kafka.conn:<BrokerConnection client_id=kafka-python-producer-1, node_id=bootstrap-0 host=localhost:9092 <connected> [IPv6 ('::1', 9092, 0, 0)]>: Connection complete.
 INFO:shared.kafka_client:Kafka producer connected
 INFO:shared.redis_client:Redis connected
-INFO:elastic_transport.transport:HEAD http://localhost:9200/immunex_alerts [status:404 duration:0.062s]
-INFO:elastic_transport.transport:PUT http://localhost:9200/immunex_alerts [status:200 duration:0.257s]
-INFO:elastic_transport.transport:HEAD http://localhost:9200/immunex_incidents [status:404 duration:0.002s]
-INFO:elastic_transport.transport:PUT http://localhost:9200/immunex_incidents [status:200 duration:0.186s]
+INFO:elastic_transport.transport:HEAD http://localhost:9200/immunex_alerts [status:404 duration:0.034s]
+INFO:elastic_transport.transport:PUT http://localhost:9200/immunex_alerts [status:200 duration:0.242s]
+INFO:elastic_transport.transport:HEAD http://localhost:9200/immunex_incidents [status:404 duration:0.001s]
+INFO:elastic_transport.transport:PUT http://localhost:9200/immunex_incidents [status:200 duration:0.170s]
 INFO:elastic_transport.transport:HEAD http://localhost:9200/immunex_playbooks [status:404 duration:0.001s]
-INFO:elastic_transport.transport:PUT http://localhost:9200/immunex_playbooks [status:200 duration:0.177s]
+INFO:elastic_transport.transport:PUT http://localhost:9200/immunex_playbooks [status:200 duration:0.166s]
 INFO:shared.es_client:Elasticsearch connected
 INFO:orchestrator:Orchestrator started
 INFO:ingest_api:Ingest API initialized: 14 CPU workers, 8 GPU slots, 20 pipeline slots
@@ -18,21 +18,23 @@ INFO:orchestrator:Layer primary URLs: {1: 'http://localhost:8001', 2: 'http://lo
 INFO:     Application startup complete.
 INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
 INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
-INFO:httpx:HTTP Request: GET http://192.168.137.1:8001/health "HTTP/1.1 200 OK"
 INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
 INFO:httpx:HTTP Request: GET http://localhost:8002/health "HTTP/1.1 200 OK"
 INFO:httpx:HTTP Request: GET http://localhost:8003/health "HTTP/1.1 200 OK"
 INFO:httpx:HTTP Request: GET http://localhost:8004/health "HTTP/1.1 200 OK"
 INFO:httpx:HTTP Request: GET http://localhost:8005/health "HTTP/1.1 200 OK"
-INFO:     127.0.0.1:35994 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54022 - "GET /health HTTP/1.1" 200 OK
 INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
 INFO:httpx:HTTP Request: GET http://localhost:8002/health "HTTP/1.1 200 OK"
 INFO:httpx:HTTP Request: GET http://localhost:8003/health "HTTP/1.1 200 OK"
 INFO:httpx:HTTP Request: GET http://localhost:8004/health "HTTP/1.1 200 OK"
 INFO:httpx:HTTP Request: GET http://localhost:8005/health "HTTP/1.1 200 OK"
-INFO:     127.0.0.1:36000 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54030 - "GET /health HTTP/1.1" 200 OK
 INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
-INFO:httpx:HTTP Request: GET http://192.168.137.1:8001/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
 INFO:httpx:HTTP Request: POST http://localhost:8001/detect "HTTP/1.1 200 OK"
 INFO:orchestrator:Layer 1 /detect: OK (http://localhost:8001)
 INFO:httpx:HTTP Request: POST http://localhost:8004/predict "HTTP/1.1 200 OK"
@@ -48,78 +50,288 @@ INFO:kafka.conn:<BrokerConnection client_id=kafka-python-producer-1, node_id=1 h
 INFO:kafka.conn:<BrokerConnection client_id=kafka-python-producer-1, node_id=bootstrap-0 host=localhost:9092 <connected> [IPv6 ('::1', 9092, 0, 0)]>: Closing connection. 
 WARNING:kafka.cluster:Topic immunex_playbooks is not available during auto-create initialization
 INFO:shared.kafka_client:Sent to immunex_playbooks partition 0 offset 0
-INFO:elastic_transport.transport:POST http://localhost:9200/immunex_incidents/_doc [status:201 duration:0.080s]
-INFO:     127.0.0.1:50804 - "POST /demo/inject HTTP/1.1" 200 OK
+INFO:elastic_transport.transport:POST http://localhost:9200/immunex_incidents/_doc [status:201 duration:0.083s]
+INFO:     127.0.0.1:51872 - "POST /demo/inject HTTP/1.1" 200 OK
 INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
-INFO:httpx:HTTP Request: GET http://192.168.137.1:8001/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:54056 - "OPTIONS /ingest/nodes HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54058 - "OPTIONS /health HTTP/1.1" 200 OK
 INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
-INFO:httpx:HTTP Request: GET http://192.168.137.1:8001/health "HTTP/1.1 200 OK"
 INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
-INFO:httpx:HTTP Request: GET http://192.168.137.1:8001/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8002/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8003/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8004/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8005/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:54058 - "GET /health HTTP/1.1" 200 OK
 INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
-INFO:httpx:HTTP Request: GET http://192.168.137.1:8001/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8002/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8003/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8004/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8005/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:54058 - "GET /health HTTP/1.1" 200 OK
 INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
-INFO:httpx:HTTP Request: GET http://192.168.137.1:8001/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:45406 - "OPTIONS /demo/inject HTTP/1.1" 200 OK
+INFO:httpx:HTTP Request: POST http://localhost:8001/detect "HTTP/1.1 200 OK"
+INFO:orchestrator:Layer 1 /detect: OK (http://localhost:8001)
+INFO:elastic_transport.transport:POST http://localhost:9200/immunex_incidents/_doc [status:201 duration:0.014s]
+INFO:     127.0.0.1:45406 - "POST /demo/inject HTTP/1.1" 200 OK
 INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
-INFO:httpx:HTTP Request: GET http://192.168.137.1:8001/health "HTTP/1.1 200 OK"
 INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
-INFO:httpx:HTTP Request: GET http://192.168.137.1:8001/health "HTTP/1.1 200 OK"
-INFO:ingest_api:[FA6B0992] Bulk ingest: 200 logs
-INFO:ingest_api:[FA6B0992] Normalized 200/200 in 4ms (46453 logs/s)
-INFO:ingest_api:[FA6B0992] Dedup: removed 0, 200 unique remaining
-INFO:httpx:HTTP Request: POST http://localhost:8001/detect/batch "HTTP/1.1 200 OK"
-INFO:httpx:HTTP Request: POST http://localhost:8001/detect/batch "HTTP/1.1 200 OK"
-INFO:httpx:HTTP Request: POST http://localhost:8001/detect/batch "HTTP/1.1 200 OK"
-INFO:httpx:HTTP Request: POST http://localhost:8001/detect/batch "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8002/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8003/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8004/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8005/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:45406 - "GET /health HTTP/1.1" 200 OK
 INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
-INFO:httpx:HTTP Request: GET http://192.168.137.1:8001/health "HTTP/1.1 200 OK"
-INFO:httpx:HTTP Request: POST http://192.168.137.1:8001/detect/batch "HTTP/1.1 200 OK"
-INFO:httpx:HTTP Request: POST http://192.168.137.1:8001/detect/batch "HTTP/1.1 200 OK"
-INFO:httpx:HTTP Request: POST http://192.168.137.1:8001/detect/batch "HTTP/1.1 200 OK"
 INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
-INFO:httpx:HTTP Request: GET http://192.168.137.1:8001/health "HTTP/1.1 200 OK"
-INFO:httpx:HTTP Request: POST http://192.168.137.1:8001/detect/batch "HTTP/1.1 200 OK"
-INFO:ingest_api:[FA6B0992] L1 detection: 200 results in 29773ms
-INFO:ingest_api:[FA6B0992] Verdict: 200 anomalous | CRITICAL=0 HIGH=0 MEDIUM=200 LOW=0
-WARNING:kafka.cluster:Topic immunex_raw_alerts is not available during auto-create initialization
-INFO:shared.kafka_client:Sent to immunex_raw_alerts partition 0 offset 0
-INFO:ingest_api:[FA6B0992] Complete: 29909ms, 7 logs/s
-INFO:     127.0.0.1:41590 - "POST /ingest/batch HTTP/1.1" 200 OK
+INFO:httpx:HTTP Request: GET http://localhost:8002/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8003/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8004/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8005/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:45200 - "GET /health HTTP/1.1" 200 OK
 INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
-INFO:httpx:HTTP Request: GET http://192.168.137.1:8001/health "HTTP/1.1 200 OK"
 INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
-INFO:httpx:HTTP Request: GET http://192.168.137.1:8001/health "HTTP/1.1 200 OK"
-INFO:ingest_api:[03733399] Bulk ingest: 10 logs
-INFO:ingest_api:[03733399] Normalized 10/10 in 0ms (10000 logs/s)
-INFO:ingest_api:[03733399] Dedup: removed 0, 10 unique remaining
-INFO:httpx:HTTP Request: POST http://localhost:8001/detect/batch "HTTP/1.1 200 OK"
-INFO:httpx:HTTP Request: POST http://192.168.137.1:8001/detect/batch "HTTP/1.1 200 OK"
-INFO:ingest_api:[03733399] L1 detection: 10 results in 1688ms
-INFO:ingest_api:[03733399] Verdict: 10 anomalous | CRITICAL=0 HIGH=0 MEDIUM=10 LOW=0
-INFO:shared.kafka_client:Sent to immunex_raw_alerts partition 0 offset 1
-INFO:ingest_api:[03733399] Complete: 1694ms, 6 logs/s
-INFO:     127.0.0.1:48402 - "POST /ingest/batch HTTP/1.1" 200 OK
+INFO:httpx:HTTP Request: GET http://localhost:8002/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8003/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8004/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8005/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:44290 - "GET /health HTTP/1.1" 200 OK
 INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
-INFO:httpx:HTTP Request: GET http://192.168.137.1:8001/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:44290 - "OPTIONS /ingest/nodes HTTP/1.1" 200 OK
 INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
-INFO:httpx:HTTP Request: GET http://192.168.137.1:8001/health "HTTP/1.1 200 OK"
 INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
-INFO:httpx:HTTP Request: GET http://192.168.137.1:8001/health "HTTP/1.1 200 OK"
-INFO:     127.0.0.1:45856 - "GET /openapi.json HTTP/1.1" 200 OK
 INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
-INFO:httpx:HTTP Request: GET http://192.168.137.1:8001/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8002/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:37668 - "OPTIONS /ingest/nodes HTTP/1.1" 200 OK
+INFO:httpx:HTTP Request: GET http://localhost:8003/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8004/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8005/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:37654 - "GET /health HTTP/1.1" 200 OK
 INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
-INFO:httpx:HTTP Request: GET http://192.168.137.1:8001/health "HTTP/1.1 200 OK"
 INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
-INFO:httpx:HTTP Request: GET http://192.168.137.1:8001/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8002/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8003/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8004/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8005/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:37654 - "GET /health HTTP/1.1" 200 OK
 INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
-INFO:httpx:HTTP Request: GET http://192.168.137.1:8001/health "HTTP/1.1 200 OK"
 INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
-INFO:httpx:HTTP Request: GET http://192.168.137.1:8001/health "HTTP/1.1 200 OK"
-INFO:     127.0.0.1:47016 - "GET /ingest/nodes HTTP/1.1" 200 OK
+INFO:httpx:HTTP Request: POST http://localhost:8001/detect "HTTP/1.1 200 OK"
+INFO:orchestrator:Layer 1 /detect: OK (http://localhost:8001)
+INFO:httpx:HTTP Request: POST http://localhost:8004/predict "HTTP/1.1 200 OK"
+INFO:orchestrator:Layer 4 /predict: OK (http://localhost:8004)
+INFO:httpx:HTTP Request: POST http://localhost:8002/correlate "HTTP/1.1 200 OK"
+INFO:orchestrator:Layer 2 /correlate: OK (http://localhost:8002)
+INFO:httpx:HTTP Request: POST http://localhost:8003/respond "HTTP/1.1 200 OK"
+INFO:orchestrator:Layer 3 /respond: OK (http://localhost:8003)
+INFO:httpx:HTTP Request: POST http://localhost:8005/explain "HTTP/1.1 200 OK"
+INFO:orchestrator:Layer 5 /explain: OK (http://localhost:8005)
+INFO:shared.kafka_client:Sent to immunex_playbooks partition 0 offset 1
+INFO:elastic_transport.transport:POST http://localhost:9200/immunex_incidents/_doc [status:201 duration:0.034s]
+INFO:     127.0.0.1:33330 - "POST /demo/inject HTTP/1.1" 200 OK
 INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
-INFO:httpx:HTTP Request: GET http://192.168.137.1:8001/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8002/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8003/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8004/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8005/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:41338 - "GET /health HTTP/1.1" 200 OK
 INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
-INFO:httpx:HTTP Request: GET http://192.168.137.1:8001/health "HTTP/1.1 200 OK"
 INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
-INFO:httpx:HTTP Request: GET http://192.168.137.1:8001/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8002/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8003/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8004/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8005/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:38432 - "GET /health HTTP/1.1" 200 OK
+INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8002/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8003/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8004/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8005/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:55994 - "GET /health HTTP/1.1" 200 OK
+INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8002/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8003/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8004/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8005/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:46278 - "GET /health HTTP/1.1" 200 OK
+INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8002/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8003/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8004/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8005/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:35802 - "GET /health HTTP/1.1" 200 OK
+INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8002/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8003/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8004/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8005/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:40520 - "GET /health HTTP/1.1" 200 OK
+INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8002/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8003/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8004/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8005/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:38372 - "GET /health HTTP/1.1" 200 OK
+INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8002/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8003/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8004/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8005/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:53112 - "GET /health HTTP/1.1" 200 OK
+INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:53124 - "OPTIONS /ingest/nodes HTTP/1.1" 200 OK
+INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8002/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8003/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8004/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8005/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:53112 - "GET /health HTTP/1.1" 200 OK
+INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8002/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8003/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8004/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8005/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:53112 - "GET /health HTTP/1.1" 200 OK
+INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8002/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8003/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8004/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8005/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:53112 - "GET /health HTTP/1.1" 200 OK
+INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8002/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8003/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8004/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8005/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:53112 - "GET /health HTTP/1.1" 200 OK
+INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST http://localhost:8001/detect "HTTP/1.1 200 OK"
+INFO:orchestrator:Layer 1 /detect: OK (http://localhost:8001)
+INFO:httpx:HTTP Request: POST http://localhost:8004/predict "HTTP/1.1 200 OK"
+INFO:orchestrator:Layer 4 /predict: OK (http://localhost:8004)
+INFO:httpx:HTTP Request: POST http://localhost:8002/correlate "HTTP/1.1 200 OK"
+INFO:orchestrator:Layer 2 /correlate: OK (http://localhost:8002)
+INFO:httpx:HTTP Request: POST http://localhost:8003/respond "HTTP/1.1 200 OK"
+INFO:orchestrator:Layer 3 /respond: OK (http://localhost:8003)
+INFO:httpx:HTTP Request: POST http://localhost:8005/explain "HTTP/1.1 200 OK"
+INFO:orchestrator:Layer 5 /explain: OK (http://localhost:8005)
+INFO:shared.kafka_client:Sent to immunex_playbooks partition 0 offset 2
+INFO:elastic_transport.transport:POST http://localhost:9200/immunex_incidents/_doc [status:201 duration:0.039s]
+INFO:     127.0.0.1:39150 - "POST /demo/inject HTTP/1.1" 200 OK
+INFO:httpx:HTTP Request: POST http://localhost:8001/detect "HTTP/1.1 200 OK"
+INFO:orchestrator:Layer 1 /detect: OK (http://localhost:8001)
+INFO:elastic_transport.transport:POST http://localhost:9200/immunex_incidents/_doc [status:201 duration:0.010s]
+INFO:     127.0.0.1:39150 - "POST /demo/inject HTTP/1.1" 200 OK
+INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8002/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8003/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8004/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8005/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:39150 - "GET /health HTTP/1.1" 200 OK
+INFO:httpx:HTTP Request: POST http://localhost:8001/detect "HTTP/1.1 200 OK"
+INFO:orchestrator:Layer 1 /detect: OK (http://localhost:8001)
+INFO:elastic_transport.transport:POST http://localhost:9200/immunex_incidents/_doc [status:201 duration:0.010s]
+INFO:     127.0.0.1:39150 - "POST /demo/inject HTTP/1.1" 200 OK
+INFO:httpx:HTTP Request: POST http://localhost:8001/detect "HTTP/1.1 200 OK"
+INFO:orchestrator:Layer 1 /detect: OK (http://localhost:8001)
+INFO:elastic_transport.transport:POST http://localhost:9200/immunex_incidents/_doc [status:201 duration:0.010s]
+INFO:     127.0.0.1:37230 - "POST /demo/inject HTTP/1.1" 200 OK
+INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST http://localhost:8001/detect "HTTP/1.1 200 OK"
+INFO:orchestrator:Layer 1 /detect: OK (http://localhost:8001)
+INFO:elastic_transport.transport:POST http://localhost:9200/immunex_incidents/_doc [status:201 duration:0.010s]
+INFO:     127.0.0.1:37230 - "POST /demo/inject HTTP/1.1" 200 OK
+INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8002/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8003/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8004/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8005/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:49488 - "GET /health HTTP/1.1" 200 OK
+INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8002/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8003/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8004/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8005/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:60356 - "GET /health HTTP/1.1" 200 OK
+INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8002/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8003/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8004/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8005/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:43538 - "GET /health HTTP/1.1" 200 OK
+INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8002/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8003/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8004/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8005/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:53912 - "GET /health HTTP/1.1" 200 OK
+INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8002/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8003/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8004/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8005/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:38936 - "GET /health HTTP/1.1" 200 OK
+INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8002/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8003/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8004/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8005/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:55162 - "GET /health HTTP/1.1" 200 OK
+INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:57896 - "OPTIONS /health HTTP/1.1" 200 OK
+INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8002/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8003/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8004/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8005/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:57896 - "GET /health HTTP/1.1" 200 OK
+INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8002/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8003/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8004/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8005/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:58098 - "GET /health HTTP/1.1" 200 OK
+INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8002/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8003/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8004/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8005/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:49364 - "GET /health HTTP/1.1" 200 OK
+INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8002/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8003/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8004/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8005/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:51646 - "GET /health HTTP/1.1" 200 OK
+INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8002/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8003/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8004/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8005/health "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:36402 - "GET /health HTTP/1.1" 200 OK
+INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:8001/health "HTTP/1.1 200 OK"

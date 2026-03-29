@@ -21,7 +21,7 @@ class Alert(BaseModel):
     privilege_level: Optional[str] = None
 
 class AnomalyResult(BaseModel):
-    alert_id: str
+    alert_id: Optional[str] = None
     timestamp: Optional[str]
     source_ip: Optional[str] = None
     dest_ip: Optional[str] = None
