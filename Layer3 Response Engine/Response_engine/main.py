@@ -57,7 +57,10 @@ from playbook_generator import PlaybookGenerator, PlaybookReport
 from audit_logger import AuditLogger
 from action_registry import ACTION_NAMES, get_action_category
 from llm_reasoning import generate_llm_reasoning, human_approval
+<<<<<<< HEAD
 from database import insert_incident_memory, init_pool, close_pool
+=======
+>>>>>>> 2b0972f24f02f6df454050c626cf8a1556f12d69
 
 # ── Env config ─────────────────────────────────────────────────────────────
 _MODEL_PATH      = os.environ.get("IMMUNEX_MODEL_PATH",      "model_weights/dueling_dqn_immunex.zip")
@@ -189,6 +192,7 @@ def calculate_priority(alert: dict, decision: Any) -> int:
 class AlertRequest(BaseModel):
     model_config = {"extra": "ignore"}
 
+<<<<<<< HEAD
     alert_id:           str
     timestamp:          str
     source_ip:          str
@@ -205,6 +209,19 @@ class AlertRequest(BaseModel):
     # MITRE context from Layer 2
     mitre_stage:        str | None = None
     predicted_next_stage: str | None = None
+=======
+    alert_id:          str
+    timestamp:         str
+    source_ip:         str
+    destination_ip:    str
+    source_port:       int
+    destination_port:  int
+    protocol:          str
+    severity:          Literal["low", "medium", "high", "critical"]
+    attack_type:       str
+    feature_vector:    list[float]
+    layer2_confidence: float
+>>>>>>> 2b0972f24f02f6df454050c626cf8a1556f12d69
 
     @field_validator("feature_vector", mode="before")
     @classmethod
@@ -299,9 +316,12 @@ async def lifespan(app: FastAPI):
         logger.error("component_failed", component="ResponseEngine", error=str(exc))
         raise RuntimeError(f"Fatal: cannot load DQN model — {exc}") from exc
 
+<<<<<<< HEAD
     # 1b. Database pool (pgvector incident memory)
     await init_pool()
 
+=======
+>>>>>>> 2b0972f24f02f6df454050c626cf8a1556f12d69
     # 2. Safety verifier
     _verifier = SafetyVerifier(
         mgmt_ip              = _MGMT_IP,
@@ -339,7 +359,10 @@ async def lifespan(app: FastAPI):
     yield   # ← server is live here
 
     logger.info("immunex_shutting_down")
+<<<<<<< HEAD
     await close_pool()
+=======
+>>>>>>> 2b0972f24f02f6df454050c626cf8a1556f12d69
 
 
 # ── FastAPI application ───────────────────────────────────────────────────
@@ -495,6 +518,7 @@ async def respond(alert_req: AlertRequest) -> IncidentResponse:
             asyncio.create_task(
                 trigger_l4_retrain(alert, alert.get("feature_vector", []))
             )
+<<<<<<< HEAD
             # ── Store in incident_memory (fire-and-forget) ──────────────────
             asyncio.create_task(insert_incident_memory(
                 alert_id       = alert_id,
@@ -510,6 +534,8 @@ async def respond(alert_req: AlertRequest) -> IncidentResponse:
                 was_overridden = False,
                 accepted_by    = "auto_system",
             ))
+=======
+>>>>>>> 2b0972f24f02f6df454050c626cf8a1556f12d69
             return IncidentResponse(
                 alert_id             = alert_id,
                 status               = "responded",
@@ -703,6 +729,7 @@ async def approve(
         asyncio.create_task(
             trigger_l4_retrain(alert, alert.get("feature_vector", []))
         )
+<<<<<<< HEAD
         # ── Store in incident_memory (fire-and-forget) ──────────────────
         asyncio.create_task(insert_incident_memory(
             alert_id       = alert_id,
@@ -719,6 +746,8 @@ async def approve(
             override_actions = [ACTION_NAMES.get(i, str(i)) for i in (req.modified_actions or [])],
             accepted_by    = "human_operator",
         ))
+=======
+>>>>>>> 2b0972f24f02f6df454050c626cf8a1556f12d69
 
         return IncidentResponse(
             alert_id             = alert_id,

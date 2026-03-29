@@ -1,0 +1,103 @@
+{
+  "playbook_id": "se5_CICDSupplyChain",
+  "generated_at": "2026-03-28T17:16:09.202676Z",
+  "incident_title": "se5 CICDSupplyChain",
+  "severity": "CRITICAL",
+  "severity_description": "Confirmed attack with active exploitation. Immediate response required.",
+  "scenario_detected": true,
+  "log_count": 9,
+  "detection_count": 3,
+  "normalization_coverage": "78%",
+  "iocs": {
+    "malicious_ips": [
+      "10.0.40.100",
+      "198.51.100.99"
+    ],
+    "suspicious_commands": [
+      "/usr/bin/bash"
+    ]
+  },
+  "mitre_attack": [
+    {
+      "tactic_id": "TA0001",
+      "tactic": "Initial Access",
+      "technique_id": "T1195.002",
+      "technique": "Compromise Software Supply Chain"
+    },
+    {
+      "tactic_id": "TA0000",
+      "tactic": "Multi-Stage Attack",
+      "technique_id": "T1078",
+      "technique": "Valid Accounts"
+    }
+  ],
+  "timeline": [
+    {
+      "time": "2026-03-27T08:15:05Z",
+      "log_id": "LOG003",
+      "source": "sysmon",
+      "finding": "/opt/actions-runner/Runner.Worker",
+      "score": 95,
+      "label": "CRITICAL",
+      "triggers": [
+        "SuspCmd:CurlPipeBash_RCE",
+        "SupplyChainAttack:MaliciousPayloadInCI",
+        "ChainEscalation:+25pts_3events_3types"
+      ]
+    },
+    {
+      "time": "2026-03-27T08:15:08Z",
+      "log_id": "LOG005",
+      "source": "sysmon",
+      "finding": "/usr/bin/bash",
+      "score": 50,
+      "label": "MEDIUM",
+      "triggers": [
+        "SuspCmd:CredHarvest_EnvVars",
+        "ChainEscalation:+25pts_3events_3types"
+      ]
+    },
+    {
+      "time": "2026-03-27T08:15:10Z",
+      "log_id": "LOG006",
+      "source": "zeek",
+      "finding": "Unknown",
+      "score": 50,
+      "label": "MEDIUM",
+      "triggers": [
+        "MaliciousIP:198.51.100.99",
+        "ChainEscalation:+25pts_3events_3types"
+      ]
+    }
+  ],
+  "response_actions": [
+    "Immediately disable the compromised CI/CD pipeline",
+    "Revoke all secrets/tokens accessible from the runner environment",
+    "Audit recent pipeline runs for exfiltrated credentials",
+    "Review all packages deployed via this pipeline for tampering",
+    "Block outbound connection to 198.51.100.99",
+    "Rotate AWS/Azure/GCP credentials that may have been harvested"
+  ],
+  "false_positive_events": [
+    {
+      "log_id": "LOG001",
+      "finding": "Unknown"
+    },
+    {
+      "log_id": "LOG002",
+      "finding": "Unknown"
+    },
+    {
+      "log_id": "LOG004",
+      "finding": "bash -c 'echo Running scan setup'"
+    },
+    {
+      "log_id": "LOG007",
+      "finding": "Unknown"
+    },
+    {
+      "log_id": "LOG008",
+      "finding": "/usr/bin/bash"
+    }
+  ]
+}

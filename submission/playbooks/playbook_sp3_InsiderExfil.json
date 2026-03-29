@@ -1,0 +1,90 @@
+{
+  "playbook_id": "sp3_InsiderExfil",
+  "generated_at": "2026-03-28T17:16:09.203264Z",
+  "incident_title": "sp3 InsiderExfil",
+  "severity": "CRITICAL",
+  "severity_description": "Confirmed attack with active exploitation. Immediate response required.",
+  "scenario_detected": true,
+  "log_count": 8,
+  "detection_count": 2,
+  "normalization_coverage": "84%",
+  "iocs": {
+    "malicious_ips": [
+      "31.216.146.19",
+      "10.0.50.44",
+      "52.95.110.1",
+      "10.0.30.10"
+    ],
+    "suspicious_commands": []
+  },
+  "mitre_attack": [
+    {
+      "tactic_id": "TA0001",
+      "tactic": "Initial Access",
+      "technique_id": "T1078",
+      "technique": "Valid Accounts"
+    },
+    {
+      "tactic_id": "TA0010",
+      "tactic": "Exfiltration",
+      "technique_id": "T1041",
+      "technique": "Exfiltration Over C2"
+    }
+  ],
+  "timeline": [
+    {
+      "time": "2026-03-27T02:25:00Z",
+      "log_id": "LOG004",
+      "source": "zeek",
+      "finding": "Unknown",
+      "score": 85,
+      "label": "CRITICAL",
+      "triggers": [
+        "MaliciousIP:31.216.146.19",
+        "MassExfil:8.5GB_outbound",
+        "ChainEscalation:+25pts_2events_2types"
+      ]
+    },
+    {
+      "time": "2026-03-27T03:00:00Z",
+      "log_id": "LOG005",
+      "source": "zeek",
+      "finding": "Unknown",
+      "score": 60,
+      "label": "HIGH",
+      "triggers": [
+        "MassExfil:5.0GB_outbound",
+        "ChainEscalation:+25pts_2events_2types"
+      ]
+    }
+  ],
+  "response_actions": [
+    "Preserve all endpoint and DLP logs for the suspect user",
+    "Revoke access immediately pending investigation",
+    "Identify all data transferred to external destinations",
+    "Engage legal/HR for insider threat investigation process",
+    "Review cloud storage and email for additional exfil channels"
+  ],
+  "false_positive_events": [
+    {
+      "log_id": "LOG001",
+      "finding": "powershell Get-Service"
+    },
+    {
+      "log_id": "LOG003",
+      "finding": "WindowsLogonSuccess"
+    },
+    {
+      "log_id": "LOG006",
+      "finding": "WindowsLogonSuccess"
+    },
+    {
+      "log_id": "LOG008",
+      "finding": "powershell.exe"
+    },
+    {
+      "log_id": "LOG009",
+      "finding": "invoice.docm"
+    }
+  ]
+}

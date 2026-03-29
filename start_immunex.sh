@@ -9,6 +9,10 @@ mkdir -p "$LOG"
 L2_URL="${LAYER2_URL:-http://localhost:8002}"
 L3_URL="${LAYER3_URL:-http://localhost:8003}"
 L4_URL="${LAYER4_URL:-http://localhost:8004}"
+<<<<<<< HEAD
+=======
+L5_URL="${LAYER5_URL:-http://localhost:8005}"
+>>>>>>> 2b0972f24f02f6df454050c626cf8a1556f12d69
 
 echo "╔══════════════════════════════════════╗"
 echo "║     IMMUNEX STARTUP SEQUENCE         ║"
@@ -17,7 +21,11 @@ echo "╚═══════════════════════�
 # ── Step 1: Kill all previous layer processes ────────────────────────────────
 echo ""
 echo "[1/6] Killing previous processes..."
+<<<<<<< HEAD
 fuser -k 8000/tcp 8001/tcp 8002/tcp 8003/tcp 8004/tcp 2>/dev/null
+=======
+fuser -k 8000/tcp 8001/tcp 8002/tcp 8003/tcp 8004/tcp 8005/tcp 2>/dev/null
+>>>>>>> 2b0972f24f02f6df454050c626cf8a1556f12d69
 pkill -f "uvicorn.*immunex" 2>/dev/null
 pkill -f "uvicorn.*layer" 2>/dev/null
 pkill -f "uvicorn.*orchestrator" 2>/dev/null
@@ -136,7 +144,17 @@ else
     echo "  ↗  Layer 4 remote: $L4_URL"
 fi
 
+<<<<<<< HEAD
 
+=======
+if [[ "$L5_URL" == *"localhost"* ]]; then
+    start_layer "Layer 5" \
+        "$VENV/uvicorn 'Layer5_Threat Memory.server:app' --host 0.0.0.0 --port 8005" \
+        8005 "$LOG/layer5.log" 15
+else
+    echo "  ↗  Layer 5 remote: $L5_URL"
+fi
+>>>>>>> 2b0972f24f02f6df454050c626cf8a1556f12d69
 
 # ── Step 6: Orchestrator ──────────────────────────────────────────────────────
 echo ""
@@ -144,6 +162,10 @@ echo "[6/6] Starting Orchestrator..."
 LAYER2_URL="$L2_URL" \
 LAYER3_URL="$L3_URL" \
 LAYER4_URL="$L4_URL" \
+<<<<<<< HEAD
+=======
+LAYER5_URL="$L5_URL" \
+>>>>>>> 2b0972f24f02f6df454050c626cf8a1556f12d69
 $VENV/uvicorn orchestrator.server:app --host 0.0.0.0 --port 8000 > "$LOG/orchestrator.log" 2>&1 &
 sleep 8
 curl -s http://localhost:8000/health > /dev/null 2>&1 \
@@ -175,10 +197,18 @@ echo "  Layer 1      : http://localhost:8001"
 echo "  Layer 2      : $L2_URL"
 echo "  Layer 3      : $L3_URL"
 echo "  Layer 4      : $L4_URL"
+<<<<<<< HEAD
 echo ""
 echo "Distributed run:"
 echo "  LAYER2_URL=http://10.0.0.2:8002 LAYER3_URL=http://10.0.0.3:8003 \\"
 echo "  LAYER4_URL=http://10.0.0.4:8004 \\"
+=======
+echo "  Layer 5      : $L5_URL"
+echo ""
+echo "Distributed run:"
+echo "  LAYER2_URL=http://10.0.0.2:8002 LAYER3_URL=http://10.0.0.3:8003 \\"
+echo "  LAYER4_URL=http://10.0.0.4:8004 LAYER5_URL=http://10.0.0.5:8005 \\"
+>>>>>>> 2b0972f24f02f6df454050c626cf8a1556f12d69
 echo "  ./start_immunex.sh"
 echo ""
 echo "Demo inject  : curl -X POST http://localhost:8000/demo/inject"

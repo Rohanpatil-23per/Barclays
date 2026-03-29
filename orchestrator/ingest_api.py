@@ -41,14 +41,25 @@ router = APIRouter(prefix="/ingest", tags=["ingest"])
 # Each node runs layer1_detection/server.py with /detect/batch endpoint
 L1_NODES = [
     os.getenv("L1_NODE_1", "http://localhost:8001"),        # Your 4070 (primary)
+<<<<<<< HEAD
     os.getenv("L1_NODE_2", "http://10.0.0.2:8001"),         # Acer Nitro 4050
     os.getenv("L1_NODE_3", "http://10.0.0.3:8001"),         # Lenovo LOQ 3050
     os.getenv("L1_NODE_4", "http://10.0.0.4:8001"),         # HP Victus 2050
     os.getenv("L1_NODE_5", "http://10.0.0.5:8001"),         # HP Pavilion 1650
+=======
+    os.getenv("L1_NODE_2", "http://192.168.137.1:8001"),         # Acer Nitro 4050
+    os.getenv("L1_NODE_3", "http://192.168.137.213:8001"),         # Lenovo LOQ 3050
+    os.getenv("L1_NODE_4", "http://192.168.137.225:8001"),         # HP Victus 2050
+    os.getenv("L1_NODE_5", "http://192.168.137.244:8001"),         # HP Pavilion 1650
+>>>>>>> 2b0972f24f02f6df454050c626cf8a1556f12d69
 ]
 
 # Track which nodes are alive (updated by health checker)
 _node_alive: dict[str, bool] = {url: ("localhost" in url or "127.0.0.1" in url) for url in L1_NODES}
+<<<<<<< HEAD
+=======
+_node_device: dict[str, str] = {url: "unknown" for url in L1_NODES}
+>>>>>>> 2b0972f24f02f6df454050c626cf8a1556f12d69
 _node_latency: dict[str, float] = {url: 0.0 for url in L1_NODES}
 
 # Global semaphore: prevent GPU OOM across all concurrent requests
@@ -155,11 +166,25 @@ async def _deduplicate(alerts: list[dict], redis, window_s: int = 60) -> tuple[l
 # ── Distributed L1 fan-out ────────────────────────────────────────────────────
 
 def _get_live_nodes() -> list[str]:
+<<<<<<< HEAD
     """Return nodes that are currently alive, sorted by latency."""
     live = [(url, lat) for url, lat in _node_latency.items()
             if _node_alive.get(url, False)]
     live.sort(key=lambda x: x[1])
     return [url for url, _ in live] or [L1_NODES[0]]  # fallback to primary
+=======
+    """Return GPU nodes that are alive, sorted by latency. CPU nodes excluded."""
+    live = [(url, lat) for url, lat in _node_latency.items()
+            if _node_alive.get(url, False)
+            and _node_device.get(url, "unknown") in ("cuda", "unknown")]
+    live.sort(key=lambda x: (x[1] == 0.0, x[1]))
+    if not live:
+        # Fallback: use any live node including CPU
+        live = [(url, lat) for url, lat in _node_latency.items()
+                if _node_alive.get(url, False)]
+        live.sort(key=lambda x: x[1])
+    return [url for url, _ in live] or [L1_NODES[0]]
+>>>>>>> 2b0972f24f02f6df454050c626cf8a1556f12d69
 
 
 def _partition_alerts(alerts: list[dict], nodes: list[str]) -> list[list[dict]]:
@@ -506,6 +531,10 @@ async def node_status():
             status[url] = {
                 "online": True,
                 "device": data.get("device", "unknown"),
+<<<<<<< HEAD
+=======
+                "gpu_eligible": data.get("device", "unknown") == "cuda",
+>>>>>>> 2b0972f24f02f6df454050c626cf8a1556f12d69
                 "latency_ms": round(_node_latency.get(url, 0), 1),
                 "alive": _node_alive.get(url, False),
             }
@@ -545,7 +574,13 @@ async def _node_health_loop(app_state: dict):
             try:
                 t0 = time.perf_counter()
                 r = await http.get(f"{url}/health", timeout=2.0)
+<<<<<<< HEAD
                 _node_alive[url] = r.status_code == 200
+=======
+                data = r.json()
+                _node_alive[url] = r.status_code == 200
+                _node_device[url] = data.get("device", "unknown")
+>>>>>>> 2b0972f24f02f6df454050c626cf8a1556f12d69
                 _node_latency[url] = (time.perf_counter() - t0) * 1000
             except Exception:
                 _node_alive[url] = False

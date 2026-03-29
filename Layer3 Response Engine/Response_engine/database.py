@@ -88,6 +88,7 @@ CREATE INDEX IF NOT EXISTS idx_rejected_demos_vector
     WITH (lists = 100);
 """
 
+<<<<<<< HEAD
 # ── Incident Memory table — core adaptive memory store ──────────────────────
 
 # Stores both vectors for every accepted/auto-executed incident so the system
@@ -128,6 +129,8 @@ CREATE INDEX IF NOT EXISTS idx_incident_memory_768d
     WITH (lists = 100);
 """
 
+=======
+>>>>>>> 2b0972f24f02f6df454050c626cf8a1556f12d69
 
 # ── Pool lifecycle ──────────────────────────────────────────────────────────
 
@@ -170,11 +173,16 @@ async def init_pool() -> None:
         logger.info("asyncpg_pool_created", dsn=_DATABASE_URL.split("@")[-1])
 
         async with _pool.acquire() as conn:
+<<<<<<< HEAD
             # [IMMUNEX-PATCH] Execute DDL in order: extension → tables → indexes
+=======
+            # [IMMUNEX-PATCH] Execute DDL in order: extension → tables → index
+>>>>>>> 2b0972f24f02f6df454050c626cf8a1556f12d69
             await conn.execute(_SQL_ENABLE_VECTOR)
             await conn.execute(_SQL_EXPERT_TABLE)
             await conn.execute(_SQL_REJECTED_TABLE)
             await conn.execute(_SQL_REJECTED_INDEX)
+<<<<<<< HEAD
             await conn.execute(_SQL_INCIDENT_MEMORY_TABLE)
             # Indexes on incident_memory — created separately so creation is
             # idempotent even if the table already has rows.
@@ -186,6 +194,8 @@ async def init_pool() -> None:
                 await conn.execute(_SQL_INCIDENT_768D_INDEX)
             except Exception:
                 pass
+=======
+>>>>>>> 2b0972f24f02f6df454050c626cf8a1556f12d69
 
         logger.info("database_schema_initialised")
 
@@ -381,6 +391,7 @@ async def is_action_rejected(
             error=str(exc),
         )
         return False  # [IMMUNEX-PATCH] Fail open — don't block on DB errors
+<<<<<<< HEAD
 
 
 # ── Incident Memory write helper ────────────────────────────────────────────
@@ -467,3 +478,5 @@ async def insert_incident_memory(
             alert_id=alert_id,
             error=str(exc),
         )
+=======
+>>>>>>> 2b0972f24f02f6df454050c626cf8a1556f12d69

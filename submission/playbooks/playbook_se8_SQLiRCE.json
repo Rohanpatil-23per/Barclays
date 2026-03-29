@@ -1,0 +1,130 @@
+{
+  "playbook_id": "se8_SQLiRCE",
+  "generated_at": "2026-03-28T17:16:09.202943Z",
+  "incident_title": "se8 SQLiRCE",
+  "severity": "CRITICAL",
+  "severity_description": "Confirmed attack with active exploitation. Immediate response required.",
+  "scenario_detected": true,
+  "log_count": 11,
+  "detection_count": 5,
+  "normalization_coverage": "86%",
+  "iocs": {
+    "malicious_ips": [
+      "198.51.100.77"
+    ],
+    "suspicious_commands": [
+      "/store/products.aspx?id=12'; EXEC sp_configure 'xp_cmdshell', 1;--",
+      "cmd.exe",
+      "powershell.exe",
+      "powershell.exe"
+    ]
+  },
+  "mitre_attack": [
+    {
+      "tactic_id": "TA0001",
+      "tactic": "Initial Access",
+      "technique_id": "T1078",
+      "technique": "Valid Accounts"
+    },
+    {
+      "tactic_id": "TA0001",
+      "tactic": "Initial Access",
+      "technique_id": "T1190",
+      "technique": "Exploit Public-Facing App"
+    }
+  ],
+  "timeline": [
+    {
+      "time": "2026-03-28 08:15:30",
+      "log_id": "LOG007",
+      "source": "unknown",
+      "finding": "cmd.exe",
+      "score": 80,
+      "label": "CRITICAL",
+      "triggers": [
+        "MaliciousIP:198.51.100.77",
+        "SuspCmd:PSDownload",
+        "ChainEscalation:+25pts_5events_3types"
+      ]
+    },
+    {
+      "time": "2026-03-28 08:15:31",
+      "log_id": "LOG008",
+      "source": "unknown",
+      "finding": "powershell.exe",
+      "score": 50,
+      "label": "MEDIUM",
+      "triggers": [
+        "MaliciousIP:198.51.100.77",
+        "ChainEscalation:+25pts_5events_3types"
+      ]
+    },
+    {
+      "time": "2026-03-28 08:15:32",
+      "log_id": "LOG009",
+      "source": "unknown",
+      "finding": "powershell.exe",
+      "score": 50,
+      "label": "MEDIUM",
+      "triggers": [
+        "MaliciousIP:198.51.100.77",
+        "ChainEscalation:+25pts_5events_3types"
+      ]
+    },
+    {
+      "time": "2026-03-28T08:14:22Z",
+      "log_id": "LOG003",
+      "source": "Cloud_WAF",
+      "finding": "/store/products.aspx?id=12'; EXEC sp_configure 'xp_cmdshell', 1;--",
+      "score": 85,
+      "label": "CRITICAL",
+      "triggers": [
+        "MaliciousIP:198.51.100.77",
+        "SQLInjection:WAF_allowed",
+        "ChainEscalation:+25pts_5events_3types"
+      ]
+    },
+    {
+      "time": "2026-03-28T08:14:30Z",
+      "log_id": "LOG004",
+      "source": "Cloud_WAF",
+      "finding": "/store/products.aspx?id=12",
+      "score": 50,
+      "label": "MEDIUM",
+      "triggers": [
+        "MaliciousIP:198.51.100.77",
+        "ChainEscalation:+25pts_5events_3types"
+      ]
+    }
+  ],
+  "response_actions": [
+    "Block IP 198.51.100.77 at WAF and firewall",
+    "Patch or disable xp_cmdshell in SQL Server immediately",
+    "Audit SQL Server logs for additional commands executed",
+    "Check for web shells dropped via Invoke-WebRequest",
+    "Review WAF rules \u2014 SQLi payload was allowed through",
+    "Assume RCE achieved \u2014 treat host as fully compromised"
+  ],
+  "false_positive_events": [
+    {
+      "log_id": "LOG001",
+      "finding": "/store/products.aspx?id=10"
+    },
+    {
+      "log_id": "LOG002",
+      "finding": "/store/products.aspx?id=25"
+    },
+    {
+      "log_id": "LOG005",
+      "finding": "sqlservr.exe"
+    },
+    {
+      "log_id": "LOG006",
+      "finding": "cmd.exe"
+    },
+    {
+      "log_id": "LOG010",
+      "finding": "explorer.exe"
+    }
+  ]
+}

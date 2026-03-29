@@ -29,8 +29,11 @@ class AnomalyResult(BaseModel):
     anomaly_score: float
     is_anomalous: bool
     embedding: List[float]
+<<<<<<< HEAD
     # Explicit 768D RoBERTa CLS embedding — carried through L2 → L3 → pgvector
     roberta_embedding: Optional[List[float]] = None
+=======
+>>>>>>> 2b0972f24f02f6df454050c626cf8a1556f12d69
     detection_method: Optional[str] = "unknown"
     event_type: Optional[str] = None
     protocol: Optional[str] = None

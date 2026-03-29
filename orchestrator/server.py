@@ -26,6 +26,7 @@ LAYER_URLS = {
         os.getenv("LAYER1_URL",    "http://localhost:8001"),
     ],
     2: [
+<<<<<<< HEAD
         os.getenv("LAYER2_URL",    "http://10.0.0.2:8002"),   # Acer Nitro 4050
         os.getenv("LAYER2_FB1",    "http://10.0.0.3:8002"),   # Lenovo LOQ 3050
         os.getenv("LAYER2_FB2",    "http://10.0.0.4:8002"),   # HP Victus 2050
@@ -43,6 +44,31 @@ LAYER_URLS = {
         os.getenv("LAYER4_FB2",    "http://10.0.0.2:8004"),   # Acer Nitro 4050
         os.getenv("LAYER4_FB3",    "http://localhost:8004"),
     ],
+=======
+        os.getenv("LAYER2_URL",    "http://192.168.137.1:8002"),   # Acer Nitro 4050
+        os.getenv("LAYER2_FB1",    "http://192.168.137.213:8002"),   # Lenovo LOQ 3050
+        os.getenv("LAYER2_FB2",    "http://192.168.137.225:8002"),   # HP Victus 2050
+        os.getenv("LAYER2_FB3",    "http://localhost:8002"),   # your machine last
+    ],
+    3: [
+        os.getenv("LAYER3_URL",    "http://192.168.137.213:8003"),   # Lenovo LOQ 3050
+        os.getenv("LAYER3_FB1",    "http://192.168.137.1:8003"),   # Acer Nitro 4050
+        os.getenv("LAYER3_FB2",    "http://192.168.137.225:8003"),   # HP Victus 2050
+        os.getenv("LAYER3_FB3",    "http://localhost:8003"),
+    ],
+    4: [
+        os.getenv("LAYER4_URL",    "http://192.168.137.225:8004"),   # HP Victus 2050
+        os.getenv("LAYER4_FB1",    "http://192.168.137.244:8004"),   # HP Pavilion 1650
+        os.getenv("LAYER4_FB2",    "http://192.168.137.1:8004"),   # Acer Nitro 4050
+        os.getenv("LAYER4_FB3",    "http://localhost:8004"),
+    ],
+    5: [
+        os.getenv("LAYER5_URL",    "http://192.168.137.244:8005"),   # HP Pavilion 1650
+        os.getenv("LAYER5_FB1",    "http://192.168.137.213:8005"),   # Lenovo LOQ 3050
+        os.getenv("LAYER5_FB2",    "http://192.168.137.1:8005"),   # Acer Nitro 4050
+        os.getenv("LAYER5_FB3",    "http://localhost:8005"),
+    ],
+>>>>>>> 2b0972f24f02f6df454050c626cf8a1556f12d69
 }
 
 TIMEOUT = 30.0
@@ -192,6 +218,10 @@ async def run_pipeline(alert: Alert):
         "layer2":       None,
         "layer3":       None,
         "layer4":       None,
+<<<<<<< HEAD
+=======
+        "layer5":       None,
+>>>>>>> 2b0972f24f02f6df454050c626cf8a1556f12d69
         "final_action": None,
         "playbook":     None,
     }
@@ -222,6 +252,7 @@ async def run_pipeline(alert: Alert):
 
     # L2 + L4 in parallel
     l2_payload = {
+<<<<<<< HEAD
         "alert_id":          l1["alert_id"],
         "timestamp":         l1.get("timestamp", ""),
         "source_ip":         l1.get("source_ip", ""),
@@ -231,6 +262,15 @@ async def run_pipeline(alert: Alert):
         "feature_vector":    l1["embedding"],          # 768D — for Transformer input
         "roberta_embedding": l1.get("roberta_embedding") or l1["embedding"],  # 768D explicit carry
         "cicids_features":   l1.get("cicids_features", []),  # Full CICIDS features for L2
+=======
+        "alert_id":       l1["alert_id"],
+        "timestamp":      l1.get("timestamp", ""),
+        "source_ip":      l1.get("source_ip", ""),
+        "dest_ip":        l1.get("dest_ip", ""),
+        "attack_type":    l1.get("attack_type", ""),
+        "anomaly_score":  l1["anomaly_score"],
+        "feature_vector": l1["embedding"],
+>>>>>>> 2b0972f24f02f6df454050c626cf8a1556f12d69
     }
     _l4_feats = l1.get("cicids_features") or l1["embedding"][:25]
     if len(_l4_feats) < 25:
@@ -246,6 +286,7 @@ async def run_pipeline(alert: Alert):
 
     if l2:
         l3_payload = {
+<<<<<<< HEAD
             "alert_id":           l1["alert_id"],
             "timestamp":          l1.get("timestamp", ""),
             "source_ip":          l1.get("source_ip", ""),
@@ -261,6 +302,20 @@ async def run_pipeline(alert: Alert):
             "mitre_stage":        l2.get("mitre_stage", ""),
             "predicted_next_stage": l2.get("predicted_next_stage", ""),
             "layer2_confidence":  l2.get("layer2_confidence", l2.get("confidence", 0.5)),
+=======
+            "alert_id":          l1["alert_id"],
+            "timestamp":         l1.get("timestamp", ""),
+            "source_ip":         l1.get("source_ip", ""),
+            "destination_ip":    l1.get("dest_ip", ""),
+            "dest_ip":           l1.get("dest_ip", ""),
+            "source_port":       0,
+            "destination_port":  0,
+            "protocol":          "TCP",
+            "severity":          "critical" if l1["anomaly_score"] > 0.7 else "high",
+            "attack_type":       l1.get("attack_type", ""),
+            "feature_vector":    l1["embedding"],
+            "layer2_confidence": l2.get("confidence", 0.5),
+>>>>>>> 2b0972f24f02f6df454050c626cf8a1556f12d69
         }
         l3 = await call_layer(3, "/respond", l3_payload)
         result["layer3"] = l3
@@ -293,8 +348,14 @@ async def run_pipeline(alert: Alert):
         except Exception as e:
             logger.warning(f"L4 retrain skipped: {e}")
 
+<<<<<<< HEAD
     # Playbook generation (Leveraging God-Mode Layer 2 payload)
     if not rf.get("playbook_eligible"):
+=======
+    # L5 playbook gate
+    if not rf.get("playbook_eligible"):
+        result["layer5"]   = None
+>>>>>>> 2b0972f24f02f6df454050c626cf8a1556f12d69
         result["playbook"] = {
             "incident_id": pipeline_id,
             "attack_summary": "Low quality signal — playbook suppressed",
@@ -303,6 +364,7 @@ async def run_pipeline(alert: Alert):
         _log_to_es(result, alert)
         return result
 
+<<<<<<< HEAD
     try:
         # Utilize the derived predictive/temporal memory from Layer 2
         l2_stage = l2.get("mitre_stage", "unknown") if l2 else "unknown"
@@ -341,6 +403,42 @@ async def run_pipeline(alert: Alert):
             "predicted_next": "unknown", 
             "confidence": 0.0
         }
+=======
+    l5_payload = result["final_action"]
+    l5 = await call_layer(5, "/explain", l5_payload)
+    if l5 and not l5.get("predicted_next") and l5.get("predicted_threats"):
+        l5["predicted_next"] = l5["predicted_threats"][0]
+    result["layer5"] = l5
+
+    if not l5:
+        try:
+            ollama_r = await state["http"].post(
+                f"{LAYER_URLS[1][0]}/generate-playbook",
+                json={
+                    "prompt": "Generate a 3-step incident response playbook.",
+                    "context": {
+                        "attack_type":   l1.get("attack_type"),
+                        "source_ip":     l1.get("source_ip"),
+                        "anomaly_score": l1.get("anomaly_score"),
+                        "method":        l1.get("detection_method"),
+                    }
+                },
+                timeout=60.0
+            )
+            playbook_text = ollama_r.json().get("response", "")
+            result["playbook"] = {
+                "incident_id":    pipeline_id,
+                "attack_summary": f"{l1.get('attack_type')} from {l1.get('source_ip')}",
+                "steps":          [playbook_text],
+                "predicted_next": "unknown",
+                "confidence":     0.5,
+                "source":         "layer1_ollama_fallback",
+            }
+        except Exception as e:
+            logger.error(f"Playbook fallback failed: {e}")
+    else:
+        result["playbook"] = l5
+>>>>>>> 2b0972f24f02f6df454050c626cf8a1556f12d69
 
     state["kafka"].send("playbooks", {
         "pipeline_id":   pipeline_id,
@@ -356,6 +454,7 @@ async def run_pipeline(alert: Alert):
         "alert_id":      alert.alert_id,
         "verdict":       result["verdict"],
         "anomaly_score": result["anomaly_score"],
+<<<<<<< HEAD
             "layers_online": {
             "l1": l1 is not None, "l2": l2 is not None,
             "l3": result["layer3"] is not None,
@@ -384,11 +483,23 @@ async def run_pipeline(alert: Alert):
                 logger.warning(f"FAISS feedback failed (non-fatal): {_fe}")
         asyncio.create_task(_send_faiss_feedback())
 
+=======
+        "layers_online": {
+            "l1": l1 is not None, "l2": l2 is not None,
+            "l3": result["layer3"] is not None,
+            "l4": l4 is not None, "l5": l5 is not None,
+        }
+    })
+
+>>>>>>> 2b0972f24f02f6df454050c626cf8a1556f12d69
     _log_to_es(result, alert)
     result["completed_at"] = datetime.utcnow().isoformat()
     return result
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 2b0972f24f02f6df454050c626cf8a1556f12d69
 @app.post("/demo/inject")
 async def demo_inject():
     botnet_features = [-0.7646905574813246,1.8493171336719367,0.1360842597127493,-0.038256832829822,-0.2234762935258288,0.1867425617760749,-0.2887230032189737,-0.3338156024101207,-0.3094501517292162,-0.243075338744169,4.544640932295218,-0.6642257447173439,3.1770112733598714,4.633082888390731,-0.1770146168201649,-0.1587662528427847,1.1936840927012191,2.3922403065334,2.765064551509225,-0.0582008046198575,1.862034595775524,0.8855807278018033,2.6763375243600733,2.762514242871944,-0.1243816297992087,-0.3613781146589914,-0.2127801830691396,-0.2475923127532377,-0.2842236442106687,-0.122538486443635,-0.1890309835329326,0.0,0.0,0.0,0.0373291387560878,-0.0817210922126444,-0.1349697802794396,-0.205328179738589,-0.7746180708204594,4.332156577732468,2.060003453281091,3.636782569436395,3.947944798307136,-0.1742105834718708,-0.1890309835329326,0.0,-0.5689403351968044,1.6932962780256324,-0.2973405807608872,0.0,0.0,-1.1283890896284317,2.027611601794204,-0.3094501517292162,3.1770112733598714,0.0,0.0,0.0,0.0,0.0,0.0,0.1360842597127493,-0.2234762935258288,-0.038256832829822,0.1867425617760749,-0.4425389824504542,-0.2020681797073581,0.3430337318398583,-0.8167862912590615,0.4715044104583414,-0.1382837801439019,0.2060428820616336,0.5834133109605503,2.897013722170425,-0.1150629802833818,2.7933872433630125,2.946668070457503]
@@ -418,7 +529,11 @@ async def pipeline_status():
     return {
         "online":          online,
         "offline":         offline,
+<<<<<<< HEAD
         "ready":           len(online) >= 4,
+=======
+        "ready":           len(online) == 5,
+>>>>>>> 2b0972f24f02f6df454050c626cf8a1556f12d69
         "layer1_critical": layer_status.get(1, False),
         "active_urls":     _active_url,
     }
@@ -433,12 +548,19 @@ def _log_to_es(result: dict, alert: Alert):
             "attack_type":   alert.alert_type,
             "verdict":       result.get("verdict", "unknown"),
             "anomaly_score": result.get("anomaly_score", 0),
+<<<<<<< HEAD
             "layers_ran":    [k for k in ["layer1","layer2","layer3","layer4"]
+=======
+            "layers_ran":    [k for k in ["layer1","layer2","layer3","layer4","layer5"]
+>>>>>>> 2b0972f24f02f6df454050c626cf8a1556f12d69
                               if result.get(k) is not None],
         })
     except Exception as e:
         logger.error(f"ES log failed: {e}")
 
+<<<<<<< HEAD
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("orchestrator.server:app", host="0.0.0.0", port=8000, reload=False)
+=======
+>>>>>>> 2b0972f24f02f6df454050c626cf8a1556f12d69
