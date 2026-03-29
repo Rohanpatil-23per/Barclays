@@ -1,0 +1,45 @@
+{
+  "playbook_id": "se7_LateralMovement",
+  "generated_at": "2026-03-28T17:16:09.202873Z",
+  "incident_title": "se7 LateralMovement",
+  "severity": "LOW",
+  "severity_description": "Low-confidence signal. Monitor and correlate with other events.",
+  "scenario_detected": false,
+  "log_count": 10,
+  "detection_count": 0,
+  "normalization_coverage": "80%",
+  "iocs": {
+    "malicious_ips": [],
+    "suspicious_commands": []
+  },
+  "mitre_attack": [],
+  "timeline": [],
+  "response_actions": [
+    "Trace the originating compromised account and isolate",
+    "Review all SMB/RDP connections from the source host",
+    "Check for persistence mechanisms installed during lateral movement",
+    "Reset all accounts that authenticated from the compromised host"
+  ],
+  "false_positive_events": [
+    {
+      "log_id": "LOG001",
+      "finding": "/store/products.aspx?id=12'; EXEC sp_configure 'show advanced options', 1; RECON"
+    },
+    {
+      "log_id": "LOG002",
+      "finding": "WindowsLogonSuccess"
+    },
+    {
+      "log_id": "LOG003",
+      "finding": "WindowsLogonSuccess"
+    },
+    {
+      "log_id": "LOG004",
+      "finding": "Unknown"
+    },
+    {
+      "log_id": "LOG005",
+      "finding": "C:\\\\Windows\\\\System32\\\\wbem\\\\WmiPrvSE.exe"
+    }
+  ]
+}

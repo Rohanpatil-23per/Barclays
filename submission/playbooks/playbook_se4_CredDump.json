@@ -1,0 +1,86 @@
+{
+  "playbook_id": "se4_CredDump",
+  "generated_at": "2026-03-28T17:16:09.202557Z",
+  "incident_title": "se4 CredDump",
+  "severity": "CRITICAL",
+  "severity_description": "Confirmed attack with active exploitation. Immediate response required.",
+  "scenario_detected": true,
+  "log_count": 9,
+  "detection_count": 2,
+  "normalization_coverage": "81%",
+  "iocs": {
+    "malicious_ips": [],
+    "suspicious_commands": []
+  },
+  "mitre_attack": [
+    {
+      "tactic_id": "TA0006",
+      "tactic": "Credential Access",
+      "technique_id": "T1003.001",
+      "technique": "LSASS Memory"
+    },
+    {
+      "tactic_id": "TA0000",
+      "tactic": "Multi-Stage Attack",
+      "technique_id": "T1078",
+      "technique": "Valid Accounts"
+    }
+  ],
+  "timeline": [
+    {
+      "time": "2026-03-27T14:15:00Z",
+      "log_id": "LOG003",
+      "source": "sysmon",
+      "finding": "C:\\\\Windows\\\\System32\\\\lsass.exe",
+      "score": 100,
+      "label": "CRITICAL",
+      "triggers": [
+        "LsassAccess:GrantedAccess=0x1010",
+        "LsassEscalation:credential_dump_confirmed",
+        "ChainEscalation:+25pts_2events_2types"
+      ]
+    },
+    {
+      "time": "2026-03-27T14:16:00Z",
+      "log_id": "LOG004",
+      "source": "sysmon",
+      "finding": "lsass.exe",
+      "score": 100,
+      "label": "CRITICAL",
+      "triggers": [
+        "LsassAccess:GrantedAccess=0x1000",
+        "LsassEscalation:credential_dump_confirmed",
+        "ChainEscalation:+25pts_2events_2types"
+      ]
+    }
+  ],
+  "response_actions": [
+    "Isolate the host where lsass access was detected",
+    "Assume all credentials on that host are compromised \u2014 rotate them",
+    "Check for lateral movement using dumped credentials (NTLM)",
+    "Review Sysmon EventID 10 logs across all DCs",
+    "Deploy credential guard to prevent future lsass dumps"
+  ],
+  "false_positive_events": [
+    {
+      "log_id": "LOG001",
+      "finding": "powershell Get-Process"
+    },
+    {
+      "log_id": "LOG002",
+      "finding": "WindowsLogonSuccess"
+    },
+    {
+      "log_id": "LOG005",
+      "finding": "WindowsLogonFailure"
+    },
+    {
+      "log_id": "LOG006",
+      "finding": "WindowsLogonSuccess"
+    },
+    {
+      "log_id": "LOG007",
+      "finding": "WindowsLogonSuccess"
+    }
+  ]
+}

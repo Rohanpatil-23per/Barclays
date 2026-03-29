@@ -1,0 +1,141 @@
+{
+  "playbook_id": "se1_AccountTakeover",
+  "generated_at": "2026-03-28T17:16:09.202332Z",
+  "incident_title": "se1 AccountTakeover",
+  "severity": "CRITICAL",
+  "severity_description": "Confirmed attack with active exploitation. Immediate response required.",
+  "scenario_detected": true,
+  "log_count": 10,
+  "detection_count": 5,
+  "normalization_coverage": "78%",
+  "iocs": {
+    "malicious_ips": [
+      "193.168.0.50"
+    ],
+    "suspicious_commands": []
+  },
+  "mitre_attack": [
+    {
+      "tactic_id": "TA0001",
+      "tactic": "Initial Access",
+      "technique_id": "T1078",
+      "technique": "Valid Accounts"
+    },
+    {
+      "tactic_id": "TA0001",
+      "tactic": "Initial Access",
+      "technique_id": "T1078.004",
+      "technique": "Cloud Accounts"
+    },
+    {
+      "tactic_id": "TA0009",
+      "tactic": "Collection",
+      "technique_id": "T1114.003",
+      "technique": "Email Forwarding Rule"
+    },
+    {
+      "tactic_id": "TA0009",
+      "tactic": "Collection",
+      "technique_id": "T1114",
+      "technique": "Email Collection"
+    }
+  ],
+  "timeline": [
+    {
+      "time": "2026-03-27T11:00:00Z",
+      "log_id": "LOG003",
+      "source": "azure_ad",
+      "finding": "Sign-in activity",
+      "score": 70,
+      "label": "HIGH",
+      "triggers": [
+        "MaliciousIP:193.168.0.50",
+        "AzureAD_RiskySignIn:atrisk",
+        "ChainEscalation:+25pts_5events_4types"
+      ]
+    },
+    {
+      "time": "2026-03-27T11:05:00Z",
+      "log_id": "LOG005",
+      "source": "office365",
+      "finding": "New-InboxRule",
+      "score": 90,
+      "label": "CRITICAL",
+      "triggers": [
+        "MaliciousIP:193.168.0.50",
+        "ExternalMailForwarding:external.audit.finance@gmail.com",
+        "SuspiciousCloudOp:New-InboxRule_from_MaliciousIP",
+        "ChainEscalation:+25pts_5events_4types"
+      ]
+    },
+    {
+      "time": "2026-03-27T11:10:00Z",
+      "log_id": "LOG007",
+      "source": "office365",
+      "finding": "MailItemsAccessed",
+      "score": 65,
+      "label": "HIGH",
+      "triggers": [
+        "MaliciousIP:193.168.0.50",
+        "SuspiciousCloudOp:MailItemsAccessed_from_MaliciousIP",
+        "ChainEscalation:+25pts_5events_4types"
+      ]
+    },
+    {
+      "time": "2026-03-27T11:15:00Z",
+      "log_id": "LOG008",
+      "source": "sharepoint",
+      "finding": "Shared Documents/Finance/Wire_Transfer_Approval_Protocols.pdf",
+      "score": 65,
+      "label": "HIGH",
+      "triggers": [
+        "MaliciousIP:193.168.0.50",
+        "SuspiciousCloudOp:FileDownloaded_from_MaliciousIP",
+        "ChainEscalation:+25pts_5events_4types"
+      ]
+    },
+    {
+      "time": "2026-03-27T11:20:00Z",
+      "log_id": "LOG010",
+      "source": "office365",
+      "finding": "Send",
+      "score": 65,
+      "label": "HIGH",
+      "triggers": [
+        "MaliciousIP:193.168.0.50",
+        "SuspiciousCloudOp:Send_from_MaliciousIP",
+        "ChainEscalation:+25pts_5events_4types"
+      ]
+    }
+  ],
+  "response_actions": [
+    "Block IP 193.168.0.50 at perimeter firewall immediately",
+    "Revoke all active sessions for the compromised account",
+    "Remove the malicious inbox forwarding rule via Exchange admin",
+    "Reset credentials and enforce MFA re-enrollment",
+    "Audit all emails sent/forwarded in the past 72 hours",
+    "Notify data protection officer \u2014 possible data exfiltration"
+  ],
+  "false_positive_events": [
+    {
+      "log_id": "LOG001",
+      "finding": "Sign-in activity"
+    },
+    {
+      "log_id": "LOG002",
+      "finding": "MailItemsAccessed"
+    },
+    {
+      "log_id": "LOG004",
+      "finding": "Sign-in activity"
+    },
+    {
+      "log_id": "LOG006",
+      "finding": "New-InboxRule"
+    },
+    {
+      "log_id": "LOG009",
+      "finding": "Shared Documents/Finance/Monthly_Report.xlsx"
+    }
+  ]
+}

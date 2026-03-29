@@ -1,0 +1,110 @@
+{
+  "playbook_id": "se6_RansomwarePrep",
+  "generated_at": "2026-03-28T17:16:09.202777Z",
+  "incident_title": "se6 RansomwarePrep",
+  "severity": "CRITICAL",
+  "severity_description": "Confirmed attack with active exploitation. Immediate response required.",
+  "scenario_detected": true,
+  "log_count": 8,
+  "detection_count": 3,
+  "normalization_coverage": "85%",
+  "iocs": {
+    "malicious_ips": [
+      "10.0.10.5",
+      "198.51.100.45",
+      "52.216.146.19"
+    ],
+    "suspicious_commands": [
+      "powershell.exe"
+    ]
+  },
+  "mitre_attack": [
+    {
+      "tactic_id": "TA0040",
+      "tactic": "Impact",
+      "technique_id": "T1490",
+      "technique": "Inhibit System Recovery"
+    },
+    {
+      "tactic_id": "TA0000",
+      "tactic": "Multi-Stage Attack",
+      "technique_id": "T1078",
+      "technique": "Valid Accounts"
+    },
+    {
+      "tactic_id": "TA0010",
+      "tactic": "Exfiltration",
+      "technique_id": "T1041",
+      "technique": "Exfiltration Over C2"
+    }
+  ],
+  "timeline": [
+    {
+      "time": "2026-03-27T02:05:00Z",
+      "log_id": "LOG004",
+      "source": "sysmon",
+      "finding": "powershell.exe",
+      "score": 95,
+      "label": "CRITICAL",
+      "triggers": [
+        "SuspCmd:VSS_ShadowDelete",
+        "VSS_ShadowDelete",
+        "ChainEscalation:+25pts_3events_4types"
+      ]
+    },
+    {
+      "time": "2026-03-27T02:10:00Z",
+      "log_id": "LOG005",
+      "source": "zeek",
+      "finding": "Unknown",
+      "score": 60,
+      "label": "HIGH",
+      "triggers": [
+        "MassExfil:150.0GB_outbound",
+        "ChainEscalation:+25pts_3events_4types"
+      ]
+    },
+    {
+      "time": "2026-03-27T02:15:00Z",
+      "log_id": "LOG006",
+      "source": "zeek",
+      "finding": "Unknown",
+      "score": 50,
+      "label": "MEDIUM",
+      "triggers": [
+        "MaliciousIP:198.51.100.45",
+        "ChainEscalation:+25pts_3events_4types"
+      ]
+    }
+  ],
+  "response_actions": [
+    "Isolate affected host immediately \u2014 ransomware deployment imminent",
+    "Restore VSS shadow copies from offsite backup if available",
+    "Block outbound to 198.51.100.45 and 52.216.146.19",
+    "Investigate 150GB exfiltration \u2014 identify data scope",
+    "Engage incident response team \u2014 potential double-extortion scenario",
+    "Preserve forensic image of affected system before remediation"
+  ],
+  "false_positive_events": [
+    {
+      "log_id": "LOG001",
+      "finding": "WindowsLogonSuccess"
+    },
+    {
+      "log_id": "LOG002",
+      "finding": "C:\\\\Program Files\\\\Jenkins\\\\jenkins.exe"
+    },
+    {
+      "log_id": "LOG003",
+      "finding": "powershell Get-Date"
+    },
+    {
+      "log_id": "LOG007",
+      "finding": "C:\\\\Program Files\\\\EnterpriseBackup\\\\backup_agent.exe"
+    },
+    {
+      "log_id": "LOG008",
+      "finding": "backup_agent.exe --verify"
+    }
+  ]
+}

@@ -1,0 +1,85 @@
+{
+  "log_id": "LOG001",
+  "timestamp": "2026-03-27T01:55:00Z",
+  "source": "windows_security",
+  "EventID": 4624,
+  "user": "it.admin",
+  "logon_type": 2,
+  "src_ip": "10.0.20.10"
+},
+
+{
+  "log_id": "LOG002",
+  "timestamp": "2026-03-27T02:00:15Z",
+  "source": "sysmon",
+  "EventID": 1,
+  "Image": "C:\\\\Windows\\\\System32\\\\WindowsPowerShell\\\\v1.0\\\\powershell.exe",
+  "CommandLine": "powershell.exe -ExecutionPolicy Bypass -File C:\\\\IT_Ops\\\\Scripts\\\\Nightly-CloudBackup.ps1",
+  "User": "BANKLOCAL\\\\svc_jenkins",
+  "ParentImage": "C:\\\\Program Files\\\\Jenkins\\\\jenkins.exe"
+},
+
+{
+  "log_id": "LOG003",
+  "timestamp": "2026-03-27T02:02:00Z",
+  "source": "sysmon",
+  "EventID": 1,
+  "Image": "powershell.exe",
+  "CommandLine": "powershell Get-Date",
+  "User": "BANKLOCAL\\\\svc_jenkins"
+},
+
+{
+  "log_id": "LOG004",
+  "timestamp": "2026-03-27T02:05:00Z",
+  "source": "sysmon",
+  "EventID": 1,
+  "Image": "C:\\\\Windows\\\\System32\\\\vssadmin.exe",
+  "CommandLine": "vssadmin.exe delete shadows /for=c: /oldest",
+  "User": "BANKLOCAL\\\\svc_jenkins",
+  "ParentImage": "powershell.exe"
+},
+
+{
+  "log_id": "LOG005",
+  "timestamp": "2026-03-27T02:10:00Z",
+  "source": "zeek",
+  "src_ip": "10.0.10.5",
+  "dest_ip": "52.216.146.19",
+  "dest_port": 443,
+  "service": "ssl",
+  "duration": 3600,
+  "orig_bytes": 150000000000,
+  "resp_bytes": 50000
+},
+
+{
+  "log_id": "LOG006",
+  "timestamp": "2026-03-27T02:15:00Z",
+  "source": "zeek",
+  "src_ip": "10.0.10.5",
+  "dest_ip": "198.51.100.45",
+  "dest_port": 443,
+  "service": "ssl",
+  "orig_bytes": 20000,
+  "resp_bytes": 18000
+},
+
+{
+  "log_id": "LOG007",
+  "timestamp": "2026-03-27T03:05:10Z",
+  "source": "sysmon",
+  "EventID": 11,
+  "Image": "C:\\\\Program Files\\\\EnterpriseBackup\\\\backup_agent.exe",
+  "TargetFilename": "E:\\\\Local_Archives\\\\Finance_Data_20260327.aes256"
+},
+
+{
+  "log_id": "LOG008",
+  "timestamp": "2026-03-27T03:06:00Z",
+  "source": "sysmon",
+  "EventID": 1,
+  "Image": "backup_agent.exe",
+  "CommandLine": "backup_agent.exe --verify",
+  "User": "SYSTEM"
+}

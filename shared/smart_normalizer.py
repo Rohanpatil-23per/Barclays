@@ -384,10 +384,28 @@ class SchemaFingerprinter:
         add("src_mac", "src_mac","source_mac","smac","mac_src")
         add("dst_mac", "dst_mac","dest_mac","dmac","mac_dst")
 
+        # ── Azure AD / Office365 / SharePoint (Judge dataset aliases) ────────
+        add("src_hostname",
+             "UserPrincipalName", "user_principal_name", "UserId",
+             "userId", "user_id", "upn")
+        add("src_ip",
+             "ClientIP", "clientIP", "client_ip", "client_address")
+        add("signature",
+             "Operation", "OperationName", "operation", "operation_name",
+             "EventType", "event_type", "activity",
+             "CommandLine", "command_line", "cmdline", "ProcessCommandLine",
+             "Image", "process_image",
+             "http_uri", "uri", "url", "request_uri")
+        add("action",
+             "logon_type", "LogonType", "http_method", "method")
+        # Zeek traffic bytes
+        add("bytes_in",  "orig_bytes", "bytes_to_server")
+        add("bytes_out", "resp_bytes", "bytes_to_client")
+        add("protocol",  "service", "network_service", "app_proto", "application")
+
         return m
 
     ALIASES: dict[str, list[str]] = {}  # populated in __init_subclass__ below
-
 
     def __init__(self):
         # Build alias map — canonical names also map to themselves
@@ -407,6 +425,9 @@ class SchemaFingerprinter:
         # Remove any parser-internal keys that got aliased to src_ip accidentally
         for _bad in ("src_user","panos_src_user","panos_user","src_nt_host_bunit",
                      "initiatingprocessparentid"):
+            self._alias_map.pop(_bad, None)
+        # log_source/source/log_type must NOT alias to src_ip
+        for _bad in ("log_source", "source", "log_type"):
             self._alias_map.pop(_bad, None)
 
     def map_field(self, raw_key: str) -> Optional[str]:

@@ -512,7 +512,6 @@ async def correlate(req: CorrelateRequest):
         logger.error(f"Correlation failed: {e}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
 
-
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("server:app", host="0.0.0.0", port=8002, reload=False)

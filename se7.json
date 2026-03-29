@@ -1,0 +1,110 @@
+{
+  "log_id": "LOG001",
+  "timestamp": "2026-03-27T14:58:00Z",
+  "source": "windows_security",
+  "EventID": 4624,
+  "user": "it.admin",
+  "logon_type": 2,
+  "src_ip": "10.0.20.10"
+},
+
+{
+  "log_id": "LOG002",
+  "timestamp": "2026-03-27T15:00:00Z",
+  "source": "windows_security",
+  "EventID": 4624,
+  "user": "svc_vuln_scanner",
+  "logon_type": 3,
+  "auth_package": "NTLM",
+  "src_ip": "10.0.10.99",
+  "dest_host": "HR-WORKSTATION-05"
+},
+
+{
+  "log_id": "LOG003",
+  "timestamp": "2026-03-27T15:00:00Z",
+  "source": "windows_security",
+  "EventID": 4624,
+  "user": "svc_vuln_scanner",
+  "logon_type": 3,
+  "auth_package": "NTLM",
+  "src_ip": "10.0.10.99",
+  "dest_host": "FIN-WORKSTATION-02"
+},
+
+{
+  "log_id": "LOG004",
+  "timestamp": "2026-03-27T15:00:01Z",
+  "source": "windows_security",
+  "EventID": 4624,
+  "user": "svc_vuln_scanner",
+  "logon_type": 3,
+  "auth_package": "NTLM",
+  "src_ip": "10.0.10.99",
+  "dest_host": "ENG-WORKSTATION-11"
+},
+
+{
+  "log_id": "LOG005",
+  "timestamp": "2026-03-27T15:00:01Z",
+  "source": "zeek",
+  "src_ip": "10.0.10.99",
+  "dest_ip": "10.0.40.55",
+  "dest_port": 445,
+  "service": "smb",
+  "conn_state": "SF"
+},
+
+{
+  "log_id": "LOG006",
+  "timestamp": "2026-03-27T15:00:02Z",
+  "source": "sysmon",
+  "EventID": 1,
+  "Image": "C:\\\\Windows\\\\System32\\\\cmd.exe",
+  "CommandLine": "cmd.exe /c systeminfo",
+  "User": "BANKLOCAL\\\\svc_vuln_scanner",
+  "ParentImage": "C:\\\\Windows\\\\System32\\\\wbem\\\\WmiPrvSE.exe"
+},
+
+{
+  "log_id": "LOG007",
+  "timestamp": "2026-03-27T15:00:03Z",
+  "source": "windows_security",
+  "EventID": 4624,
+  "user": "svc_vuln_scanner",
+  "logon_type": 3,
+  "auth_package": "NTLM",
+  "src_ip": "10.0.10.99",
+  "dest_host": "OPS-WORKSTATION-07"
+},
+
+{
+  "log_id": "LOG008",
+  "timestamp": "2026-03-27T15:00:04Z",
+  "source": "sysmon",
+  "EventID": 1,
+  "Image": "powershell.exe",
+  "CommandLine": "powershell Get-HotFix",
+  "User": "BANKLOCAL\\\\svc_vuln_scanner"
+},
+
+{
+  "log_id": "LOG009",
+  "timestamp": "2026-03-27T15:05:00Z",
+  "source": "zeek",
+  "src_ip": "10.0.10.99",
+  "dest_ip": "10.0.40.60",
+  "dest_port": 445,
+  "service": "smb",
+  "conn_state": "SF"
+},
+{
+  "timestamp": "2026-03-28T08:14:22.000Z",
+  "log_source": "Cloud_WAF",
+  "src_ip": "198.51.100.77",
+  "http_method": "GET",
+  "http_uri": "/store/products.aspx?id=12'; EXEC sp_configure 'show advanced options', 1; RECONFIGURE; EXEC sp_configure 'xp_cmdshell', 1; RECONFIGURE;--",
+  "http_user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+  "action": "ALLOWED",
+  "http_response_code": 200
+},

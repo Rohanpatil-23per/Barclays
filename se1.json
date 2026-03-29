@@ -1,0 +1,112 @@
+{
+  "log_id": "LOG001",
+  "timestamp": "2026-03-27T10:52:10Z",
+  "source": "azure_ad",
+  "OperationName": "Sign-in activity",
+  "UserPrincipalName": "finance_mgr@bank.local",
+  "IpAddress": "10.0.20.15",
+  "Location": "Pune, IN",
+  "RiskState": "none",
+  "ClientAppUsed": "Outlook"
+},
+
+{
+  "log_id": "LOG002",
+  "timestamp": "2026-03-27T10:55:00Z",
+  "source": "office365",
+  "Operation": "MailItemsAccessed",
+  "UserId": "finance_mgr@bank.local",
+  "ClientIP": "10.0.20.15"
+},
+
+{
+  "log_id": "LOG003",
+  "timestamp": "2026-03-27T11:00:00Z",
+  "source": "azure_ad",
+  "OperationName": "Sign-in activity",
+  "UserPrincipalName": "finance_mgr@bank.local",
+  "IpAddress": "193.168.0.50",
+  "Location": "Moscow, RU",
+  "RiskState": "atRisk",
+  "RiskLevel": "high",
+  "RiskEventTypes": "unfamiliarFeatures, suspiciousIPAddress",
+  "ClientAppUsed": "Browser"
+},
+
+{
+  "log_id": "LOG004",
+  "timestamp": "2026-03-27T11:01:30Z",
+  "source": "azure_ad",
+  "OperationName": "Sign-in activity",
+  "UserPrincipalName": "hr.user@bank.local",
+  "IpAddress": "10.0.25.10",
+  "Location": "Mumbai, IN",
+  "RiskState": "none"
+},
+
+{
+  "log_id": "LOG005",
+  "timestamp": "2026-03-27T11:05:00Z",
+  "source": "office365",
+  "Operation": "New-InboxRule",
+  "UserId": "finance_mgr@bank.local",
+  "ClientIP": "193.168.0.50",
+  "Parameters": {
+    "Name": "Standard Processing",
+    "ForwardTo": "external.audit.finance@gmail.com",
+    "SubjectContainsWords": ["invoice", "wire transfer"],
+    "DeleteMessage": true
+  }
+},
+
+{
+  "log_id": "LOG006",
+  "timestamp": "2026-03-27T11:06:00Z",
+  "source": "office365",
+  "Operation": "New-InboxRule",
+  "UserId": "it.admin@bank.local",
+  "ClientIP": "10.0.30.5",
+  "Parameters": {
+    "Name": "AutoSort",
+    "MoveToFolder": "Archive"
+  }
+},
+
+{
+  "log_id": "LOG007",
+  "timestamp": "2026-03-27T11:10:00Z",
+  "source": "office365",
+  "Operation": "MailItemsAccessed",
+  "UserId": "finance_mgr@bank.local",
+  "ClientIP": "193.168.0.50"
+},
+
+{
+  "log_id": "LOG008",
+  "timestamp": "2026-03-27T11:15:00Z",
+  "source": "sharepoint",
+  "Operation": "FileDownloaded",
+  "UserId": "finance_mgr@bank.local",
+  "ClientIP": "193.168.0.50",
+  "SourceRelativeUrl": "Shared Documents/Finance/Wire_Transfer_Approval_Protocols.pdf"
+},
+
+{
+  "log_id": "LOG009",
+  "timestamp": "2026-03-27T11:16:30Z",
+  "source": "sharepoint",
+  "Operation": "FileDownloaded",
+  "UserId": "finance_mgr@bank.local",
+  "ClientIP": "10.0.20.15",
+  "SourceRelativeUrl": "Shared Documents/Finance/Monthly_Report.xlsx"
+},
+
+{
+  "log_id": "LOG010",
+  "timestamp": "2026-03-27T11:20:00Z",
+  "source": "office365",
+  "Operation": "Send",
+  "UserId": "finance_mgr@bank.local",
+  "ClientIP": "193.168.0.50",
+  "Recipients": ["vendor@external.com"]
+}
