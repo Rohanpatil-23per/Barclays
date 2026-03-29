@@ -57,10 +57,7 @@ from playbook_generator import PlaybookGenerator, PlaybookReport
 from audit_logger import AuditLogger
 from action_registry import ACTION_NAMES, get_action_category
 from llm_reasoning import generate_llm_reasoning, human_approval
-from database import (
-    insert_incident_memory, init_pool, close_pool,
-    fetch_expert_demonstrations, fetch_rejected_demonstrations
-)
+from database import insert_incident_memory, init_pool, close_pool
 
 # ── Env config ─────────────────────────────────────────────────────────────
 _MODEL_PATH      = os.environ.get("IMMUNEX_MODEL_PATH",      "model_weights/dueling_dqn_immunex.zip")
@@ -821,57 +818,6 @@ async def list_actions() -> list[ActionInfo]:
         )
         for idx, name in ACTION_NAMES.items()
     ]
-
-
-@app.post(
-    "/retrain",
-    tags=["Retraining"],
-    summary="Triggers Behavioral Cloning retraining on the DQN model using incident memory",
-)
-async def retrain_model(
-    expert_limit: int = 1000,
-    rejected_limit: int = 1000,
-    epochs: int = 10,
-    lr: float = 1e-4,
-    neg_weight: float = 1.0,
-):
-    """
-    Fetches human-approved/overridden data from `expert_demonstrations`
-    and penalized data from `rejected_demonstrations`.
-    Applies Behavioral Cloning to retrain the underlying Dueling DQN.
-    """
-    if _engine is None:
-        raise HTTPException(status_code=500, detail="ResponseEngine not loaded.")
-
-    try:
-        t_start = time.perf_counter()
-        
-        expert_data = await fetch_expert_demonstrations(limit=expert_limit)
-        rejected_data = await fetch_rejected_demonstrations(limit=rejected_limit)
-        
-        if not expert_data and not rejected_data:
-            return {"status": "skipped", "message": "No retraining data found in memory."}
-
-        # Blocking retraining call pushed to threadpool
-        loop = asyncio.get_running_loop()
-        retrain_result = await loop.run_in_executor(
-            None,
-            lambda: _engine.retrain(
-                expert_data=expert_data,
-                rejected_data=rejected_data,
-                epochs=epochs,
-                lr=lr,
-                neg_weight=neg_weight
-            )
-        )
-        
-        elapsed_ms = round((time.perf_counter() - t_start) * 1000.0, 3)
-        retrain_result["duration_ms"] = elapsed_ms
-        return retrain_result
-
-    except Exception as exc:
-        logger.error("retraining_failed", error=str(exc))
-        raise HTTPException(status_code=500, detail=str(exc))
 
 
 # ── Entrypoint ─────────────────────────────────────────────────────────────

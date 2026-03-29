@@ -45,8 +45,8 @@ import torch.optim as optim
 from torch.distributions import Normal, Bernoulli
 
 # ─── Paths ────────────────────────────────────────────────────────────────────
-BASE_DIR   = r"E:\immunex_p4\layer4_immunity"
-DATA_DIR   = r"E:\immunex_p4\person4_layer4"
+BASE_DIR   = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR   = BASE_DIR
 LOG_DIR    = os.path.join(BASE_DIR, "logs")
 MODEL_PATH = os.path.join(BASE_DIR, "models", "lora_model.pt")
 TRAIN_CSV  = os.path.join(DATA_DIR, "lora_retrain_source.csv")
