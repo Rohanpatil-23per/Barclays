@@ -1,8 +1,8 @@
-INFO:     Started server process [16947]
+INFO:     Started server process [50506]
 INFO:     Waiting for application startup.
 Loading models on cuda...
-Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 21207.33it/s]
-Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 14808.63it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 14129.81it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 16981.33it/s]
 Could not create index immunex_alerts: Connection error caused by: ConnectionError(Connection error caused by: ProtocolError(('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer'))))
 Could not create index immunex_incidents: Connection error caused by: ConnectionError(Connection error caused by: ProtocolError(('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer'))))
 Could not create index immunex_playbooks: Connection error caused by: ConnectionError(Connection error caused by: ProtocolError(('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer'))))
@@ -14,18 +14,17 @@ All models loaded ✅
   Isolation Forest: loaded
   FAISS GPU index: 20030 vectors
   Kafka/Redis/ES:  connected
-INFO:     127.0.0.1:40368 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54994 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:51118 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:51118 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60560 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57326 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57342 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57342 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:44912 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38636 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38652 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38656 - "GET /health HTTP/1.1" 200 OK
 /home/aditya/.venvs/immunex/lib64/python3.11/site-packages/sklearn/utils/validation.py:2691: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
   warnings.warn(
-[Parallel(n_jobs=1)]: Done  49 tasks      | elapsed:    0.0s
-[Parallel(n_jobs=1)]: Done 199 tasks      | elapsed:    0.0s
-[Parallel(n_jobs=1)]: Done 200 out of 200 | elapsed:    0.0s finished
-/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/sklearn/utils/validation.py:2691: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
-  warnings.warn(
-INFO:     127.0.0.1:42268 - "POST /detect HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:55766 - "POST /detect HTTP/1.1" 500 Internal Server Error
 ERROR:    Exception in ASGI application
 Traceback (most recent call last):
   File "/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/uvicorn/protocols/http/h11_impl.py", line 410, in run_asgi
@@ -73,17 +72,61 @@ Traceback (most recent call last):
   File "/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/fastapi/routing.py", line 324, in run_endpoint_function
     return await dependant.call(**values)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/aditya/Documents/hoh/Barclays/layer1_detection/server.py", line 199, in detect
-    result = AnomalyResult(
-             ^^^^^^^^^^^^^^
-  File "/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/pydantic/main.py", line 250, in __init__
-    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
-                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-pydantic_core._pydantic_core.ValidationError: 1 validation error for AnomalyResult
-alert_id
-  Input should be a valid string [type=string_type, input_value=None, input_type=NoneType]
+  File "/home/aditya/Documents/hoh/Barclays/layer1_detection/server.py", line 146, in detect
+    scaled    = state["cicids_scaler"].transform(features)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/sklearn/utils/_set_output.py", line 316, in wrapped
+    data_to_wrap = f(self, X, *args, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/sklearn/preprocessing/_data.py", line 1094, in transform
+    X = validate_data(
+        ^^^^^^^^^^^^^^
+  File "/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/sklearn/utils/validation.py", line 2923, in validate_data
+    _check_n_features(_estimator, X, reset=reset)
+  File "/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/sklearn/utils/validation.py", line 2787, in _check_n_features
+    raise ValueError(
+ValueError: X has 1 features, but StandardScaler is expecting 77 features as input.
+Error processing alert: 1 validation error for Alert
+severity
+  Input should be a valid string [type=string_type, input_value=0.5, input_type=float]
     For further information visit https://errors.pydantic.dev/2.12/v/string_type
-INFO:     127.0.0.1:42274 - "GET /health HTTP/1.1" 200 OK
+Error processing alert: 1 validation error for Alert
+severity
+  Input should be a valid string [type=string_type, input_value=0.5, input_type=float]
+    For further information visit https://errors.pydantic.dev/2.12/v/string_type
+Error processing alert: 1 validation error for Alert
+severity
+  Input should be a valid string [type=string_type, input_value=0.5, input_type=float]
+    For further information visit https://errors.pydantic.dev/2.12/v/string_type
+Error processing alert: 1 validation error for Alert
+severity
+  Input should be a valid string [type=string_type, input_value=0.5, input_type=float]
+    For further information visit https://errors.pydantic.dev/2.12/v/string_type
+Error processing alert: 1 validation error for Alert
+severity
+  Input should be a valid string [type=string_type, input_value=0.5, input_type=float]
+    For further information visit https://errors.pydantic.dev/2.12/v/string_type
+Error processing alert: 1 validation error for Alert
+severity
+  Input should be a valid string [type=string_type, input_value=0.5, input_type=float]
+    For further information visit https://errors.pydantic.dev/2.12/v/string_type
+Error processing alert: 1 validation error for Alert
+severity
+  Input should be a valid string [type=string_type, input_value=0.5, input_type=float]
+    For further information visit https://errors.pydantic.dev/2.12/v/string_type
+Error processing alert: 1 validation error for Alert
+severity
+  Input should be a valid string [type=string_type, input_value=0.5, input_type=float]
+    For further information visit https://errors.pydantic.dev/2.12/v/string_type
+Error processing alert: 1 validation error for Alert
+severity
+  Input should be a valid string [type=string_type, input_value=0.5, input_type=float]
+    For further information visit https://errors.pydantic.dev/2.12/v/string_type
+Error processing alert: 1 validation error for Alert
+severity
+  Input should be a valid string [type=string_type, input_value=0.5, input_type=float]
+    For further information visit https://errors.pydantic.dev/2.12/v/string_type
+INFO:     127.0.0.1:55772 - "POST /ingest/batch HTTP/1.1" 200 OK
 /home/aditya/.venvs/immunex/lib64/python3.11/site-packages/sklearn/utils/validation.py:2691: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
   warnings.warn(
 [Parallel(n_jobs=1)]: Done  49 tasks      | elapsed:    0.0s
@@ -91,67 +134,85 @@ INFO:     127.0.0.1:42274 - "GET /health HTTP/1.1" 200 OK
 [Parallel(n_jobs=1)]: Done 200 out of 200 | elapsed:    0.0s finished
 /home/aditya/.venvs/immunex/lib64/python3.11/site-packages/sklearn/utils/validation.py:2691: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
   warnings.warn(
-INFO:     127.0.0.1:54168 - "POST /detect HTTP/1.1" 500 Internal Server Error
-ERROR:    Exception in ASGI application
-Traceback (most recent call last):
-  File "/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/uvicorn/protocols/http/h11_impl.py", line 410, in run_asgi
-    result = await app(  # type: ignore[func-returns-value]
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
-    return await self.app(scope, receive, send)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/fastapi/applications.py", line 1160, in __call__
-    await super().__call__(scope, receive, send)
-  File "/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/starlette/applications.py", line 107, in __call__
-    await self.middleware_stack(scope, receive, send)
-  File "/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/starlette/middleware/errors.py", line 186, in __call__
-    raise exc
-  File "/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/starlette/middleware/errors.py", line 164, in __call__
-    await self.app(scope, receive, _send)
-  File "/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/starlette/middleware/cors.py", line 87, in __call__
-    await self.app(scope, receive, send)
-  File "/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
-    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
-  File "/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
-    raise exc
-  File "/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
-    await app(scope, receive, sender)
-  File "/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
-    await self.app(scope, receive, send)
-  File "/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/starlette/routing.py", line 716, in __call__
-    await self.middleware_stack(scope, receive, send)
-  File "/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/starlette/routing.py", line 736, in app
-    await route.handle(scope, receive, send)
-  File "/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/starlette/routing.py", line 290, in handle
-    await self.app(scope, receive, send)
-  File "/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/fastapi/routing.py", line 130, in app
-    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
-  File "/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
-    raise exc
-  File "/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
-    await app(scope, receive, sender)
-  File "/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/fastapi/routing.py", line 116, in app
-    response = await f(request)
-               ^^^^^^^^^^^^^^^^
-  File "/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/fastapi/routing.py", line 670, in app
-    raw_response = await run_endpoint_function(
-                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/fastapi/routing.py", line 324, in run_endpoint_function
-    return await dependant.call(**values)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/aditya/Documents/hoh/Barclays/layer1_detection/server.py", line 199, in detect
-    result = AnomalyResult(
-             ^^^^^^^^^^^^^^
-  File "/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/pydantic/main.py", line 250, in __init__
-    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
-                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-pydantic_core._pydantic_core.ValidationError: 1 validation error for AnomalyResult
-alert_id
-  Input should be a valid string [type=string_type, input_value=None, input_type=NoneType]
-    For further information visit https://errors.pydantic.dev/2.12/v/string_type
-INFO:     127.0.0.1:58946 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:50126 - "GET /health HTTP/1.1" 200 OK
-INFO:     Shutting down
-INFO:     Waiting for application shutdown.
-INFO:     Application shutdown complete.
-INFO:     Finished server process [16947]
+INFO:     127.0.0.1:55788 - "POST /detect HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55788 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52074 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46326 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52444 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40906 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40922 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40922 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40922 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40934 - "OPTIONS /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40934 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40922 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40934 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34126 - "GET /health HTTP/1.1" 200 OK
+/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/sklearn/utils/validation.py:2691: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+[Parallel(n_jobs=1)]: Done  49 tasks      | elapsed:    0.0s
+[Parallel(n_jobs=1)]: Done 199 tasks      | elapsed:    0.0s
+[Parallel(n_jobs=1)]: Done 200 out of 200 | elapsed:    0.0s finished
+/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/sklearn/utils/validation.py:2691: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+INFO:     127.0.0.1:52024 - "POST /detect HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52024 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34182 - "GET /health HTTP/1.1" 200 OK
+/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/sklearn/utils/validation.py:2691: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+[Parallel(n_jobs=1)]: Done  49 tasks      | elapsed:    0.0s
+[Parallel(n_jobs=1)]: Done 199 tasks      | elapsed:    0.0s
+[Parallel(n_jobs=1)]: Done 200 out of 200 | elapsed:    0.0s finished
+/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/sklearn/utils/validation.py:2691: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+INFO:     127.0.0.1:52024 - "POST /detect HTTP/1.1" 200 OK
+/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/sklearn/utils/validation.py:2691: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+[Parallel(n_jobs=1)]: Done  49 tasks      | elapsed:    0.0s
+[Parallel(n_jobs=1)]: Done 199 tasks      | elapsed:    0.0s
+[Parallel(n_jobs=1)]: Done 200 out of 200 | elapsed:    0.0s finished
+/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/sklearn/utils/validation.py:2691: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+INFO:     127.0.0.1:34196 - "POST /detect HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48012 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36726 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38046 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36010 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56854 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33634 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33646 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35278 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55108 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49636 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38208 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51246 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57016 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57032 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58698 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58708 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45774 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51942 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34350 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47666 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39788 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43564 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43572 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38984 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42538 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56690 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57080 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46450 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42132 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42136 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48740 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48748 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48740 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48764 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48764 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48748 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36086 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55894 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55910 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55918 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55932 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53946 - "GET /health HTTP/1.1" 200 OK

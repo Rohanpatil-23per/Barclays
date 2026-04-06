@@ -306,9 +306,8 @@ async def lifespan(app: FastAPI):
     logger.info("component_ready", component="ActionExecutor", dry_run=_DRY_RUN)
 
     # 4. Playbook generator
-    # FIX 3: Updated model name from "llama3" to "llama3:8b-instruct-q4_0"
-    #        to match the quantised model pulled via `ollama pull`.
-    _generator = PlaybookGenerator(model="llama3:8b-instruct-q4_0", ollama_host=_OLLAMA_HOST)
+    # FIX A: Updated model name to "llama3.1:8b" to match what's actually pulled in Ollama
+    _generator = PlaybookGenerator(model="llama3.1:8b", ollama_host=_OLLAMA_HOST)
     logger.info(
         "component_ready",
         component        = "PlaybookGenerator",
