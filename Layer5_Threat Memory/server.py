@@ -726,10 +726,36 @@ async def predict(req: PredictRequest):
         hmm_conf    = max(hmm_state_probs) if hmm_state_probs else 0.7
         confidence  = round((hmm_conf * 0.4 + lstm_conf * 0.6), 4)
 
-        # ── Build response ────────────────────────────────────
+        # FIX C: Disagreement handling - when LSTM and HMM disagree by 2+ stages, escalate
+        STAGE_ORDER = ["Reconnaissance", "Initial_Access", "Privilege_Escalation", 
+                       "Lateral_Movement", "Exfiltration"]
+        agreement = (lstm_state == hmm_state)
+        escalate_to_soc = False
+        escalation_reason = None
+        
+        if not agreement:
+            lstm_idx = STAGE_ORDER.index(lstm_state) if lstm_state in STAGE_ORDER else 0
+            hmm_idx  = STAGE_ORDER.index(hmm_state)  if hmm_state  in STAGE_ORDER else 0
+            stage_gap = abs(lstm_idx - hmm_idx)
+            
+            # Use the MORE ADVANCED stage (higher index = further in kill chain)
+            current_state = STAGE_ORDER[max(lstm_idx, hmm_idx)]
+            
+            if stage_gap >= 2:
+                risk = "HIGH"    # Large disagreement = genuine uncertainty, escalate
+                escalate_to_soc = True
+                escalation_reason = f"LSTM/HMM disagreement - stage gap of {stage_gap}"
+            elif stage_gap == 1:
+                risk = "MEDIUM"
+                escalate_to_soc = False
+            else:
+                risk = STATE_RISK.get(current_state, "MEDIUM")
+        else:
+            risk = STATE_RISK.get(current_state, "MEDIUM")
+
+        # ── Build response ────────────────────────────────────────
         threats  = STATE_TO_THREATS.get(current_state, ["Unknown threat vector"])
         playbook = STATE_TO_PLAYBOOK.get(current_state, "Monitor and investigate.")
-        risk     = STATE_RISK.get(current_state, "MEDIUM")
         timestamp = datetime.now(timezone.utc).isoformat()
 
         result = {
@@ -745,7 +771,7 @@ async def predict(req: PredictRequest):
             "hmm_state":         hmm_state,
             "hmm_state_probs":   [round(p, 4) for p in hmm_state_probs],
             "hmm_state_labels":  HMM_STATES[:len(hmm_state_probs)],
-            "agreement":         lstm_state == hmm_state,
+            "agreement":         agreement,
             "predicted_next_obs": next_obs,
             "playbook":          playbook,
             "risk_level":        risk,
@@ -754,6 +780,8 @@ async def predict(req: PredictRequest):
             "target_ip":         target_ip,
             "timestamp":         timestamp,
             "observation_count": len(obs_sequence),
+            "escalated_to_soc":  escalate_to_soc,
+            "escalation_reason": escalation_reason,
         }
 
         # ── FIX 8: Persist prediction and update chain state ─
