@@ -120,59 +120,43 @@ STATE_RISK = {
 
 
 # ─────────────────────────────────────────────────────────────
-# LSTM model — introspect architecture from weights at startup
+# LSTM model — matches training architecture exactly
 # ─────────────────────────────────────────────────────────────
-class ThreatLSTM(nn.Module):
+class LSTMAttackerPredictor(nn.Module):
     """
-    Flexible LSTM that adapts to loaded weight shapes.
-    Detects input_size, hidden_size, num_layers from state_dict.
-    Output: probability distribution over HMM states (5 classes).
+    LSTM model that predicts attacker stage from observation history.
+    Architecture must match immunex_lstm_final.pt checkpoint exactly:
+      - Embedding layer for observations
+      - 2-layer LSTM
+      - Two output heads: obs_head (next obs), state_head (current stage)
     """
-    def __init__(self, input_size, hidden_size, num_layers, num_classes=5):
+    def __init__(self, n_obs=10, n_states=5, embed_dim=32, hidden_dim=128, n_layers=2, dropout=0.3):
         super().__init__()
-        self.lstm = nn.LSTM(
-            input_size=input_size,
-            hidden_size=hidden_size,
-            num_layers=num_layers,
+        self.embedding  = nn.Embedding(n_obs + 1, embed_dim, padding_idx=0)
+        self.lstm       = nn.LSTM(
+            embed_dim, hidden_dim, n_layers,
             batch_first=True,
-            bidirectional=False,
+            dropout=dropout if n_layers > 1 else 0
         )
-        self.fc = nn.Linear(hidden_size, num_classes)
+        self.dropout    = nn.Dropout(dropout)
+        self.obs_head   = nn.Sequential(
+            nn.Linear(hidden_dim, hidden_dim // 2),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(hidden_dim // 2, n_obs)
+        )
+        self.state_head = nn.Sequential(
+            nn.Linear(hidden_dim, hidden_dim // 2),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(hidden_dim // 2, n_states)
+        )
 
     def forward(self, x):
-        out, _ = self.lstm(x)
-        return self.fc(out[:, -1, :])
-
-
-def infer_lstm_architecture(state_dict: dict):
-    """Infer LSTM dimensions from weight tensor shapes."""
-    # weight_ih_l0 shape: (4*hidden, input)
-    wih = state_dict.get("lstm.weight_ih_l0")
-    if wih is None:
-        # Try without 'lstm.' prefix
-        wih = state_dict.get("weight_ih_l0")
-    if wih is None:
-        return None
-
-    hidden_size = wih.shape[0] // 4
-    input_size  = wih.shape[1]
-
-    # Count layers by checking weight_ih_l0, l1, l2...
-    num_layers = 0
-    for k in state_dict:
-        if "weight_ih_l" in k:
-            num_layers += 1
-
-    # FC output size
-    fc_w = state_dict.get("fc.weight", state_dict.get("classifier.weight"))
-    num_classes = fc_w.shape[0] if fc_w is not None else 5
-
-    return {
-        "input_size":  input_size,
-        "hidden_size": hidden_size,
-        "num_layers":  max(num_layers, 1),
-        "num_classes": num_classes,
-    }
+        embedded = self.dropout(self.embedding(x))
+        out, _   = self.lstm(embedded)
+        last     = self.dropout(out[:, -1, :])
+        return self.obs_head(last), self.state_head(last)
 
 
 # ─────────────────────────────────────────────────────────────
@@ -186,30 +170,44 @@ class L5Models:
         self.lstm_ok  = False
         self.hmm_ok   = False
         self.n_hmm_states = 5
+        self.seq_length = 19  # SEQ_LEN - 1 from training config
 
     def load(self, lstm_path: str, hmm_path: str):
         # ── LSTM ─────────────────────────────────────────────
         try:
             raw = torch.load(lstm_path, map_location="cpu", weights_only=False)
             state_dict = raw.get("model_state_dict", raw) if isinstance(raw, dict) else raw.state_dict()
+            config = raw.get("config", {}) if isinstance(raw, dict) else {}
 
-            arch = infer_lstm_architecture(state_dict)
-            if arch:
-                logger.info(f"LSTM arch: {arch}")
-                self.lstm = ThreatLSTM(**arch).to(self.device)
-                # Try strict load first, then non-strict
-                try:
-                    self.lstm.load_state_dict(state_dict, strict=True)
-                except RuntimeError:
-                    self.lstm.load_state_dict(state_dict, strict=False)
-                    logger.warning("LSTM loaded with strict=False (partial weights)")
-                self.lstm.eval()
-                self.lstm_ok = True
-                logger.info(f"LSTM loaded on {self.device}")
-            else:
-                logger.warning("Could not infer LSTM architecture — using HMM only")
+            # Extract config from checkpoint or use defaults matching training
+            n_obs = config.get("n_observations", 10)
+            n_states = config.get("n_states", 5)
+            embed_dim = config.get("embed_dim", 32)
+            hidden_dim = config.get("lstm_hidden", 128)
+            n_layers = config.get("lstm_layers", 2)
+            dropout = config.get("dropout", 0.3)
+            self.seq_length = config.get("seq_length", 20) - 1
+
+            logger.info(f"LSTM config: n_obs={n_obs}, n_states={n_states}, embed={embed_dim}, hidden={hidden_dim}, layers={n_layers}")
+
+            self.lstm = LSTMAttackerPredictor(
+                n_obs=n_obs,
+                n_states=n_states,
+                embed_dim=embed_dim,
+                hidden_dim=hidden_dim,
+                n_layers=n_layers,
+                dropout=dropout
+            ).to(self.device)
+
+            # Load with strict=True since architecture now matches
+            self.lstm.load_state_dict(state_dict, strict=True)
+            self.lstm.eval()
+            self.lstm_ok = True
+            logger.info(f"LSTM loaded with strict=True on {self.device}")
         except Exception as e:
             logger.warning(f"LSTM load failed: {e} — HMM-only mode")
+            import traceback
+            traceback.print_exc()
 
         # ── HMM ──────────────────────────────────────────────
         try:
@@ -265,31 +263,42 @@ class L5Models:
             logger.error(f"HMM predict error: {e}")
             return "Reconnaissance", [0.6, 0.2, 0.1, 0.05, 0.05]
 
-    def predict_lstm(self, obs_sequence: list) -> float:
+    def predict_lstm(self, obs_sequence: list) -> tuple:
         """
         Run LSTM on observation sequence.
-        Returns attack progression confidence [0,1].
+        Returns (state_name, confidence, state_probs, next_obs_name).
         """
         if not self.lstm_ok:
-            return 0.85
+            return "Reconnaissance", 0.85, [0.6, 0.2, 0.1, 0.05, 0.05], "port_scan"
 
         try:
-            # One-hot encode observations
-            n_obs = 10
-            seq = np.zeros((len(obs_sequence), n_obs), dtype=np.float32)
-            for i, obs in enumerate(obs_sequence):
-                if 0 <= obs < n_obs:
-                    seq[i, obs] = 1.0
+            # Pad sequence to match training config (seq_length - 1)
+            max_len = self.seq_length
+            padded = np.zeros(max_len, dtype=np.int64)
+            hist = np.array(obs_sequence[-max_len:], dtype=np.int64)
+            padded[max_len - len(hist):] = hist
 
-            tensor = torch.tensor(seq, dtype=torch.float32).unsqueeze(0).to(self.device)
+            tensor = torch.tensor(padded, dtype=torch.long).unsqueeze(0).to(self.device)
             with torch.no_grad():
-                logits = self.lstm(tensor)
-                probs  = torch.softmax(logits, dim=-1).squeeze()
-            # Confidence = max class prob (higher stage = more danger)
-            return float(probs.max().cpu())
+                obs_logits, state_logits = self.lstm(tensor)
+                state_probs = torch.softmax(state_logits, dim=-1).squeeze().cpu().numpy()
+                obs_probs = torch.softmax(obs_logits, dim=-1).squeeze().cpu().numpy()
+
+            state_idx = int(state_probs.argmax())
+            state_name = HMM_STATES[state_idx] if state_idx < len(HMM_STATES) else "Reconnaissance"
+            confidence = float(state_probs.max())
+            
+            # Get predicted next observation
+            obs_idx = int(obs_probs.argmax())
+            obs_names = list(OBS_TO_ID.keys())
+            next_obs = obs_names[obs_idx] if obs_idx < len(obs_names) else "port_scan"
+
+            return state_name, confidence, state_probs.tolist(), next_obs
         except Exception as e:
             logger.error(f"LSTM predict error: {e}")
-            return 0.75
+            import traceback
+            traceback.print_exc()
+            return "Reconnaissance", 0.75, [0.6, 0.2, 0.1, 0.05, 0.05], "port_scan"
 
 
 models = L5Models()
@@ -379,14 +388,18 @@ async def predict(req: PredictRequest):
         obs_sequence = OBS_SEQUENCES.get(obs_name, [obs_id])
 
         # ── HMM: infer kill chain stage ───────────────────────
-        current_state, state_probs = models.predict_hmm(obs_sequence)
+        hmm_state, hmm_state_probs = models.predict_hmm(obs_sequence)
 
-        # ── LSTM: attack progression confidence ───────────────
-        lstm_confidence = models.predict_lstm(obs_sequence)
+        # ── LSTM: attack progression prediction ───────────────
+        lstm_state, lstm_conf, lstm_state_probs, next_obs = models.predict_lstm(obs_sequence)
 
+        # Use LSTM state as primary (better accuracy from training)
+        # HMM provides second opinion
+        current_state = lstm_state
+        
         # Blend confidences
-        hmm_conf    = max(state_probs) if state_probs else 0.7
-        confidence  = round((hmm_conf * 0.6 + lstm_confidence * 0.4), 4)
+        hmm_conf    = max(hmm_state_probs) if hmm_state_probs else 0.7
+        confidence  = round((hmm_conf * 0.4 + lstm_conf * 0.6), 4)
 
         # ── Build response ────────────────────────────────────
         threats  = STATE_TO_THREATS.get(current_state, ["Unknown threat vector"])
@@ -399,11 +412,16 @@ async def predict(req: PredictRequest):
             "predicted_threats": threats,
             "time_window":       "2-6 hours",
             "confidence":        confidence,
-            "lstm_confidence":   round(lstm_confidence, 4),
+            "lstm_confidence":   round(lstm_conf, 4),
+            "lstm_state":        lstm_state,
+            "lstm_state_probs":  [round(p, 4) for p in lstm_state_probs],
             "hmm_confidence":    round(hmm_conf, 4),
+            "hmm_state":         hmm_state,
+            "hmm_state_probs":   [round(p, 4) for p in hmm_state_probs],
+            "hmm_state_labels":  HMM_STATES[:len(hmm_state_probs)],
+            "agreement":         lstm_state == hmm_state,
+            "predicted_next_obs": next_obs,
             "playbook":          playbook,
-            "hmm_state_probs":   [round(p, 4) for p in state_probs],
-            "hmm_state_labels":  HMM_STATES[:len(state_probs)],
             "risk_level":        risk,
             "observation":       obs_name,
             "attack_type":       attack_type,
