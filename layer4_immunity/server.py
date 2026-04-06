@@ -30,7 +30,32 @@ STATUS_LOG = os.path.join(LOG_DIR,   "server_status.json")
 
 os.makedirs(LOG_DIR, exist_ok=True)
 
-FEATURE_NAMES = [
+# 77 features from master_dataset/feature_columns.json (CICIDS format)
+FEATURE_NAMES_77 = [
+    "Protocol", "Flow Duration", "Total Fwd Packets", "Total Backward Packets",
+    "Fwd Packets Length Total", "Bwd Packets Length Total", "Fwd Packet Length Max",
+    "Fwd Packet Length Min", "Fwd Packet Length Mean", "Fwd Packet Length Std",
+    "Bwd Packet Length Max", "Bwd Packet Length Min", "Bwd Packet Length Mean",
+    "Bwd Packet Length Std", "Flow Bytes/s", "Flow Packets/s", "Flow IAT Mean",
+    "Flow IAT Std", "Flow IAT Max", "Flow IAT Min", "Fwd IAT Total", "Fwd IAT Mean",
+    "Fwd IAT Std", "Fwd IAT Max", "Fwd IAT Min", "Bwd IAT Total", "Bwd IAT Mean",
+    "Bwd IAT Std", "Bwd IAT Max", "Bwd IAT Min", "Fwd PSH Flags", "Bwd PSH Flags",
+    "Fwd URG Flags", "Bwd URG Flags", "Fwd Header Length", "Bwd Header Length",
+    "Fwd Packets/s", "Bwd Packets/s", "Packet Length Min", "Packet Length Max",
+    "Packet Length Mean", "Packet Length Std", "Packet Length Variance",
+    "FIN Flag Count", "SYN Flag Count", "RST Flag Count", "PSH Flag Count",
+    "ACK Flag Count", "URG Flag Count", "CWE Flag Count", "ECE Flag Count",
+    "Down/Up Ratio", "Avg Packet Size", "Avg Fwd Segment Size", "Avg Bwd Segment Size",
+    "Fwd Avg Bytes/Bulk", "Fwd Avg Packets/Bulk", "Fwd Avg Bulk Rate",
+    "Bwd Avg Bytes/Bulk", "Bwd Avg Packets/Bulk", "Bwd Avg Bulk Rate",
+    "Subflow Fwd Packets", "Subflow Fwd Bytes", "Subflow Bwd Packets",
+    "Subflow Bwd Bytes", "Init Fwd Win Bytes", "Init Bwd Win Bytes",
+    "Fwd Act Data Packets", "Fwd Seg Size Min", "Active Mean", "Active Std",
+    "Active Max", "Active Min", "Idle Mean", "Idle Std", "Idle Max", "Idle Min"
+]
+
+# Legacy 25 features for backward compatibility
+FEATURE_NAMES_25 = [
     "flow_duration", "total_fwd_packets", "total_backward_packets",
     "flow_bytes/s", "flow_packets/s", "fwd_packet_length_mean",
     "bwd_packet_length_mean", "flow_iat_mean", "fwd_iat_mean",
@@ -41,7 +66,11 @@ FEATURE_NAMES = [
     "idle_mean", "down/up_ratio", "avg_packet_size"
 ]
 
-# ─── Model architecture (same as lora_retrain.py) ─────────────────────────────
+# Default to 77 features (set by model on load)
+FEATURE_NAMES = FEATURE_NAMES_77
+INPUT_DIM = 77
+
+# ─── Model architecture (supports both 25 and 77 features) ────────────────────
 class LoRALayer(nn.Module):
     def __init__(self, in_features, out_features, rank=8):
         super().__init__()
@@ -54,15 +83,24 @@ class LoRALayer(nn.Module):
         return self.base(x) + self.lora_B(self.lora_A(x))
 
 class IMMUNEXLayer4(nn.Module):
-    def __init__(self, input_dim=25, rank=8):
+    """
+    Adaptive Immunity classifier supporting both 25-feature (legacy) 
+    and 77-feature (CICIDS master dataset) input formats.
+    """
+    def __init__(self, input_dim=77, rank=8):
         super().__init__()
+        self.input_dim = input_dim
+        self.current_rank = rank
+        # Wider first layer for 77 features
+        hidden1 = 256 if input_dim >= 77 else 128
+        hidden2 = 128 if input_dim >= 77 else 64
         self.base_encoder = nn.Sequential(
-            nn.Linear(input_dim, 128), nn.BatchNorm1d(128),
+            nn.Linear(input_dim, hidden1), nn.BatchNorm1d(hidden1),
             nn.ReLU(), nn.Dropout(0.3),
-            nn.Linear(128, 64), nn.BatchNorm1d(64),
+            nn.Linear(hidden1, hidden2), nn.BatchNorm1d(hidden2),
             nn.ReLU(), nn.Dropout(0.2),
         )
-        self.lora_layer = LoRALayer(64, 32, rank=rank)
+        self.lora_layer = LoRALayer(hidden2, 32, rank=rank)
         self.head = nn.Sequential(
             nn.ReLU(), nn.Dropout(0.1), nn.Linear(32, 2)
         )
@@ -72,40 +110,18 @@ class IMMUNEXLayer4(nn.Module):
 # ─── Request/Response schemas ──────────────────────────────────────────────────
 class TrafficSample(BaseModel):
     """
-    One network traffic sample — 25 features
+    One network traffic sample — supports 77 features (CICIDS) or 25 features (legacy)
     Can be sent as:
-      1. features list:  {"features": [0.1, -0.3, ...]}
+      1. features list:  {"features": [0.1, -0.3, ...]}   (77 or 25 floats)
       2. text format:    {"text": "flow_duration:0.1 total_fwd_packets:-0.3 ..."}
-      3. named fields:   {"flow_duration": 0.1, "total_fwd_packets": -0.3, ...}
+      3. named fields:   {"Protocol": 6, "Flow Duration": 0.1, ...}
     """
     features: Optional[List[float]] = None
     text:     Optional[str]         = None
-    # Named fields (all optional, default 0.0)
-    flow_duration:              Optional[float] = 0.0
-    total_fwd_packets:          Optional[float] = 0.0
-    total_backward_packets:     Optional[float] = 0.0
-    flow_bytes_per_s:           Optional[float] = 0.0
-    flow_packets_per_s:         Optional[float] = 0.0
-    fwd_packet_length_mean:     Optional[float] = 0.0
-    bwd_packet_length_mean:     Optional[float] = 0.0
-    flow_iat_mean:              Optional[float] = 0.0
-    fwd_iat_mean:               Optional[float] = 0.0
-    bwd_iat_mean:               Optional[float] = 0.0
-    syn_flag_count:             Optional[float] = 0.0
-    ack_flag_count:             Optional[float] = 0.0
-    fin_flag_count:             Optional[float] = 0.0
-    rst_flag_count:             Optional[float] = 0.0
-    psh_flag_count:             Optional[float] = 0.0
-    packet_length_mean:         Optional[float] = 0.0
-    packet_length_std:          Optional[float] = 0.0
-    fwd_packets_per_s:          Optional[float] = 0.0
-    bwd_packets_per_s:          Optional[float] = 0.0
-    init_fwd_win_bytes:         Optional[float] = 0.0
-    init_bwd_win_bytes:         Optional[float] = 0.0
-    active_mean:                Optional[float] = 0.0
-    idle_mean:                  Optional[float] = 0.0
-    down_up_ratio:              Optional[float] = 0.0
-    avg_packet_size:            Optional[float] = 0.0
+    # Extra fields are allowed for named-field format
+    
+    class Config:
+        extra = "allow"  # Allow any additional fields for 77-feature named input
 
 class BatchRequest(BaseModel):
     """Batch of traffic samples for bulk prediction"""
@@ -134,29 +150,45 @@ class ModelManager:
         self.is_retraining   = False
         self.last_retrain    = None
         self._lock           = threading.Lock()
+        self.input_dim       = 77  # Default to 77 features
+        self.feature_names   = FEATURE_NAMES_77
 
     def load(self):
+        global FEATURE_NAMES, INPUT_DIM
         print(f"📂 Loading model from {MODEL_PATH}...")
-        ckpt        = torch.load(MODEL_PATH,
-                                 map_location=self.device,
-                                 weights_only=False)
+        ckpt = torch.load(MODEL_PATH, map_location=self.device, weights_only=False)
+        
+        # Detect input dimension from checkpoint
+        self.input_dim = ckpt.get("input_dim", 77)
         rank = ckpt.get("lora_rank", 8)
-        self.model  = IMMUNEXLayer4(25, rank=rank).to(self.device)
+        
+        # Set feature names based on input dimension
+        if self.input_dim == 25:
+            self.feature_names = FEATURE_NAMES_25
+            FEATURE_NAMES = FEATURE_NAMES_25
+        else:
+            self.feature_names = FEATURE_NAMES_77
+            FEATURE_NAMES = FEATURE_NAMES_77
+        INPUT_DIM = self.input_dim
+        
+        # Build model with correct architecture
+        self.model = IMMUNEXLayer4(self.input_dim, rank=rank).to(self.device)
         self.model.load_state_dict(ckpt["model_state"])
         self.model.eval()
-        self.accuracy  = ckpt.get("accuracy", 94.82)
+        self.accuracy = ckpt.get("accuracy", 94.82)
         self.load_time = time.strftime("%Y-%m-%d %H:%M:%S")
-        print(f"   ✅ Model loaded | Accuracy: {self.accuracy:.2f}% | "
-              f"Device: {self.device}")
+        print(f"   ✅ Model loaded | Input dim: {self.input_dim} | "
+              f"Accuracy: {self.accuracy:.2f}% | Device: {self.device}")
 
     def parse_sample(self, sample: TrafficSample) -> np.ndarray:
-        """Convert any input format to 25-feature numpy array"""
+        """Convert any input format to feature numpy array (77 or 25 features)"""
+        dim = self.input_dim
 
         # Format 1: raw feature list
         if sample.features is not None:
-            arr = np.array(sample.features[:25], dtype=np.float32)
-            if len(arr) < 25:
-                arr = np.pad(arr, (0, 25 - len(arr)))
+            arr = np.array(sample.features[:dim], dtype=np.float32)
+            if len(arr) < dim:
+                arr = np.pad(arr, (0, dim - len(arr)))
             return arr
 
         # Format 2: text format "flow_duration:0.1 ..."
@@ -168,42 +200,22 @@ class ModelManager:
                     try: lookup[key] = float(val)
                     except: lookup[key] = 0.0
             return np.array(
-                [lookup.get(f, 0.0) for f in FEATURE_NAMES],
+                [lookup.get(f, 0.0) for f in self.feature_names],
                 dtype=np.float32
             )
 
-        # Format 3: named fields
-        field_map = {
-            "flow_duration":           sample.flow_duration,
-            "total_fwd_packets":       sample.total_fwd_packets,
-            "total_backward_packets":  sample.total_backward_packets,
-            "flow_bytes/s":            sample.flow_bytes_per_s,
-            "flow_packets/s":          sample.flow_packets_per_s,
-            "fwd_packet_length_mean":  sample.fwd_packet_length_mean,
-            "bwd_packet_length_mean":  sample.bwd_packet_length_mean,
-            "flow_iat_mean":           sample.flow_iat_mean,
-            "fwd_iat_mean":            sample.fwd_iat_mean,
-            "bwd_iat_mean":            sample.bwd_iat_mean,
-            "syn_flag_count":          sample.syn_flag_count,
-            "ack_flag_count":          sample.ack_flag_count,
-            "fin_flag_count":          sample.fin_flag_count,
-            "rst_flag_count":          sample.rst_flag_count,
-            "psh_flag_count":          sample.psh_flag_count,
-            "packet_length_mean":      sample.packet_length_mean,
-            "packet_length_std":       sample.packet_length_std,
-            "fwd_packets/s":           sample.fwd_packets_per_s,
-            "bwd_packets/s":           sample.bwd_packets_per_s,
-            "init_fwd_win_bytes":      sample.init_fwd_win_bytes,
-            "init_bwd_win_bytes":      sample.init_bwd_win_bytes,
-            "active_mean":             sample.active_mean,
-            "idle_mean":               sample.idle_mean,
-            "down/up_ratio":           sample.down_up_ratio,
-            "avg_packet_size":         sample.avg_packet_size,
-        }
-        return np.array(
-            [field_map.get(f, 0.0) for f in FEATURE_NAMES],
-            dtype=np.float32
-        )
+        # Format 3: named fields (use extra fields from pydantic model)
+        extra = sample.model_extra if hasattr(sample, 'model_extra') else {}
+        arr = []
+        for f in self.feature_names:
+            # Try exact match first, then normalized versions
+            val = extra.get(f)
+            if val is None:
+                # Try lowercase/underscore variants
+                f_lower = f.lower().replace(" ", "_").replace("/", "_per_")
+                val = extra.get(f_lower, 0.0)
+            arr.append(float(val) if val is not None else 0.0)
+        return np.array(arr, dtype=np.float32)
 
     def predict_one(self, sample: TrafficSample) -> dict:
         """Predict single traffic sample"""
@@ -391,6 +403,7 @@ async def health():
         "name":         "Adaptive Immunity",
         "model_loaded": manager.model is not None,
         "accuracy":     manager.accuracy,
+        "input_dim":    manager.input_dim,
         "device":       str(manager.device),
         "port":         8004,
     }
@@ -401,9 +414,9 @@ async def predict(sample: TrafficSample):
     Classify one network traffic sample
     
     Input (any of these formats):
-      {"features": [0.1, -0.3, 0.5, ...]}   ← list of 25 numbers
+      {"features": [0.1, -0.3, 0.5, ...]}   ← list of 77 (or 25) numbers
       {"text": "flow_duration:0.1 ..."}       ← text format
-      {"flow_duration": 0.1, ...}             ← named fields
+      {"Protocol": 6, "Flow Duration": 0.1, ...}  ← named fields (77 features)
     
     Output:
       {"prediction": 1, "label": "Attack", "confidence": 0.95, ...}
@@ -482,12 +495,14 @@ async def status():
         "name":             "Adaptive Immunity",
         "model_accuracy":   manager.accuracy,
         "model_loaded":     manager.load_time,
+        "input_dim":        manager.input_dim,
         "device":           str(manager.device),
         "predictions_made": manager.predict_count,
         "retrain_count":    manager.retrain_count,
         "is_retraining":    manager.is_retraining,
         "last_retrain":     manager.last_retrain,
-        "features":         FEATURE_NAMES,
+        "features":         manager.feature_names,
+        "num_features":     len(manager.feature_names),
         "classes":          {0: "Benign", 1: "Attack"},
         "port":             8004,
         "endpoints": {
