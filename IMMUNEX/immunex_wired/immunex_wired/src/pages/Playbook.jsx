@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getPendingApprovals, approveAction, rejectAction } from '../api/immunexApi';
+import { runDemoInjection } from '../api/immunexApi';
 
 // ── All 50 override actions — sourced from action_registry.py ────────────────
 const OVERRIDE_OPTIONS = [
@@ -118,7 +119,7 @@ const INITIAL_QUEUE = [
 ];
 
 export default function Playbook({ lastPipelineResult }) {
-  const [queue, setQueue]                     = useState(INITIAL_QUEUE);
+  const [queue, setQueue]                     = useState([]);
   const [resolved, setResolved]               = useState([]);
   const [overrideModalFor, setOverrideModalFor] = useState(null);
   const [overrideSearch, setOverrideSearch]   = useState('');
@@ -132,6 +133,47 @@ export default function Playbook({ lastPipelineResult }) {
     if (countdown <= 0) return;
     const t = setInterval(() => setCountdown(c => Math.max(0, c - 1)), 1000);
     return () => clearInterval(t);
+  }, []);
+
+  // Seed queue from real backend on mount
+  useEffect(() => {
+    const seedFromBackend = async () => {
+      try {
+        const result = await runDemoInjection({});
+        if (result?.verdict !== 'ANOMALOUS') return;
+        const l1 = result.layer1 || {};
+        const l3 = result.layer3 || {};
+        const l5 = result.layer5 || {};
+        const score = result.anomaly_score || 0.8;
+        const attackType = l1.attack_type || 'Zeus_Banking_Trojan';
+        const ACTION_MAP = {
+          Zeus_Banking_Trojan: { title: 'BLOCK & ISOLATE',  action: 'Block Source IP + Isolate Endpoint', icon: '🏦', mitre: 'T1071 — C2 Communication' },
+          BruteForce:          { title: 'RATE LIMIT',       action: 'Rate Limit + Force MFA',             icon: '🔑', mitre: 'T1110 — Brute Force' },
+          SQLInjection:        { title: 'FREEZE DB',        action: 'Freeze Database Writes',             icon: '💉', mitre: 'T1190 — Exploit Public App' },
+          PortScan:            { title: 'MONITOR & BLOCK',  action: 'Block Port Scan Source',             icon: '🔗', mitre: 'T1046 — Network Discovery' },
+          DDoS:                { title: 'NULL ROUTE',       action: 'Null Route Attacker IP',             icon: '🌊', mitre: 'T1498 — Network DoS' },
+          C2Beacon:            { title: 'SINKHOLE C2',      action: 'Block C2 Domain + Kill Process',     icon: '📡', mitre: 'T1071 — App Layer Protocol' },
+          Ransomware:          { title: 'ISOLATE HOST',     action: 'Network Isolation + Backup Restore', icon: '🔒', mitre: 'T1486 — Data Encrypted' },
+        };
+        const mapped = ACTION_MAP[attackType] || { title: 'INVESTIGATE', action: 'Escalate to SOC Tier 2', icon: '⚠', mitre: 'T1059 — Command Execution' };
+        const playbook = l5.playbook ? String(l5.playbook).slice(0, 150) : mapped.action;
+        const srcIp = l1.source_ip || '203.0.113.99';
+        setQueue([
+          {
+            id: result.alert_id || 'AX-LIVE-001',
+            priority: 1, sev: score > 0.8 ? 'critical' : 'high',
+            icon: mapped.icon, title: mapped.title,
+            target: `IP: ${srcIp}`,
+            mitre: l3?.layer2?.mitre_stage || mapped.mitre,
+            desc: playbook,
+            action: l3?.decision?.action_name || mapped.action,
+            ts: new Date().toLocaleTimeString('en', { hour12: false }),
+            _backendId: result.alert_id,
+          }
+        ]);
+      } catch { /* backend offline — queue stays empty */ }
+    };
+    seedFromBackend();
   }, []);
 
   useEffect(() => {
@@ -226,24 +268,6 @@ export default function Playbook({ lastPipelineResult }) {
     }
     handleDismiss(item);
   };
-
-  // Simulate new anomaly arriving from backend every ~18s
-  useEffect(() => {
-    const INCOMING = [
-      { id: 'AX-2099', priority: 99, sev: 'high', icon: '⚡', title: 'TERMINATE PROCESS', target: 'PROCESS: xmrig.exe (PID 4821)', mitre: 'T1496 — Resource Hijacking', desc: 'Cryptominer detected on prod-api-03. CPU at 98%. Connecting to pool.minexmr.com on port 4444.', action: 'Kill Specific Process Tree', ts: 'LIVE' },
-      { id: 'AX-2100', priority: 99, sev: 'critical', icon: '🔒', title: 'LOCK ACCOUNT', target: 'USER: carol.wong', mitre: 'T1078.002 — Domain Accounts', desc: 'After-hours sensitive file access + USB insertion detected. Finance user accessing HR and payroll data at 03:17.', action: 'Disable Active Directory Account', ts: 'LIVE' },
-    ];
-    let idx = 0;
-    const iv = setInterval(() => {
-      if (idx < INCOMING.length) {
-        setQueue(prev => [...prev, { ...INCOMING[idx], priority: prev.length + 1 }]);
-        setNewAlertFlash(true);
-        setTimeout(() => setNewAlertFlash(false), 2000);
-        idx++;
-      }
-    }, 18000);
-    return () => clearInterval(iv);
-  }, []);
 
   const mm = String(Math.floor(countdown / 60)).padStart(2, '0');
   const ss = String(countdown % 60).padStart(2, '0');

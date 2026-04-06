@@ -33,6 +33,9 @@ async function apiFetch(url, options = {}, timeoutMs = 20000) {
 
 export const getOrchestratorHealth = () => apiFetch(`${ORCHESTRATOR}/health`, {}, 5000);
 
+// FIX 9: New metrics endpoint for production monitoring
+export const getOrchestratorMetrics = () => apiFetch(`${ORCHESTRATOR}/metrics`, {}, 5000);
+
 export async function getLayerHealthStats() {
   const layers = [
     { name: 'L1 Detection',     url: `${LAYER1}/health` },

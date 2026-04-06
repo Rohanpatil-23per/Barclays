@@ -18,11 +18,14 @@ const STREAM_TEMPLATES = [
 const ANOMALY_TEMPLATES = [
   (ts, ip) => `[${ts}] FAILED_AUTH user=root src=${ip} dst=10.0.0.1 attempts=847 proto=SSH`,
   (ts, ip) => `[${ts}] PORT_SCAN src=${ip} dst_range=10.0.0.0/24 ports=1-65535 rate=1200pps`,
-  (ts, ip) => `[${ts}] OUTBOUND_CONN src=${ip} dst=194.28.115.42 dst_port=4444 interval=30s`,
+  (ts, ip) => `[${ts}] OUTBOUND_CONN src=${ip} dst=194.28.115.42 dst_port=4444 interval=30s beacon=true`,
   (ts, ip) => `{"event":"anomaly","src_ip":"${ip}","attack_cat":"SQL_INJECTION","confidence":0.97,"ts":"${ts}"}`,
-  (ts, ip) => `[${ts}] PROCESS_CREATE parent=winword.exe child=cmd.exe host=${ip} suspicious=true`,
+  (ts, ip) => `[${ts}] PROCESS_CREATE parent=winword.exe child=cmd.exe host=${ip} suspicious=true mimikatz`,
+  (ts, ip) => `[${ts}] FILE_RENAME src=${ip} file=report.docx new=report.docx.locked ransomware=true`,
+  (ts, ip) => `[${ts}] DNS_QUERY src=${ip} query=aGVsbG93b3JsZA==.exfil.attacker.io type=TXT`,
+  (ts, ip) => `[${ts}] BROWSER_HOOK host=CUSTOMER-PC src=${ip} target=https://bank.internal/login hooked=true`,
 ];
-const ANOMALY_IPS = ['45.12.98.221', '103.35.74.10', '91.92.248.101', '77.88.21.4', '194.28.115.42'];
+const ANOMALY_IPS = ['45.12.98.221', '103.35.74.10', '91.92.248.101', '77.88.21.4', '194.28.115.42', '45.129.33.21', '185.220.101.55'];
 const NORMAL_IPS  = ['192.168.1.55', '10.0.2.11', '192.168.1.22', '10.0.0.10', '172.16.0.5'];
 const TS = () => new Date().toISOString().replace('T', ' ').slice(0, 19);
 
@@ -96,7 +99,7 @@ export default function Detect({ onPipelineResult }) {
             if (isAnomaly) {
               setAnomaliesFound(c => c + 1);
               if (backendMode) {
-                setTimeout(() => triggerDetectionBackend(text, ip), 200);
+                setTimeout(() => triggerDetectionBackend(text, ip, true), 200);
               } else {
                 setTimeout(() => triggerDetectionLocal(text), 200);
               }
@@ -117,7 +120,7 @@ export default function Detect({ onPipelineResult }) {
   }, [streamRunning, backendMode]);
 
   // ── Backend detection ───────────────────────────────────────────────────────
-  const triggerDetectionBackend = async (overrideText, srcIp) => {
+  const triggerDetectionBackend = async (overrideText, srcIp, fromStream = false) => {
     const rawText = overrideText !== undefined ? overrideText : logInput;
     if (!rawText.trim()) return;
 
@@ -154,15 +157,21 @@ export default function Detect({ onPipelineResult }) {
       // Use anomalous lines if any, otherwise use full text
       const targetLines = anomalyLines.length > 0 ? anomalyLines : logLines;
       const representativeLine = targetLines[0] || rawText;
-      const alert = buildAlertFromLog(representativeLine, srcIp || '0.0.0.0');
+      const alert = buildAlertFromLog(overrideText || rawText, srcIp || '0.0.0.0');
       let result;
-      try {
-        result = await runDemoInjection(alert);
-      } catch {
+      if (fromStream) {
+        // Stream mode: call real L1 detect directly for varied results
         try {
-          result = await runPipeline(alert);
-        } catch {
           result = await runFullPipelineFrontend(alert);
+        } catch {
+          result = await runDemoInjection({});
+        }
+      } else {
+        try {
+          result = await runDemoInjection({});
+        } catch {
+          try { result = await runPipeline(alert); }
+          catch { result = await runFullPipelineFrontend(alert); }
         }
       }
       clearInterval(animInterval);
