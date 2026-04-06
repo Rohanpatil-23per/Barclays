@@ -225,7 +225,7 @@ class ModelManager:
 
     # ── BiLSTM ───────────────────────────────────────────────
     def load_bilstm(self,
-                    model_path="models/bilstm/immunex_bilstm_phase3.pt",
+                    model_path="models/bilstm/best_model.pt",
                     scaler_path="models/bilstm/scaler.pkl"):
         try:
             self.bilstm = AttackSequenceBiLSTM(
@@ -420,7 +420,7 @@ async def startup():
     base = os.path.dirname(os.path.abspath(__file__))
     models.load_gatv2(os.path.join(base, "models/gatv2/best_model.pt"))
     models.load_bilstm(
-        os.path.join(base, "models/bilstm/immunex_bilstm_phase3.pt"),
+        os.path.join(base, "models/bilstm/best_model.pt"),
         os.path.join(base, "models/bilstm/scaler.pkl"),
     )
     logger.info(
