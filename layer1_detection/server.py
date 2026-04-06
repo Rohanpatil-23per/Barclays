@@ -422,7 +422,52 @@ async def detect(alert: Alert):
     # ── Check IOC list ────────────────────────────────────────────────────────
     ioc_type = state["redis"].is_ioc(alert.source_ip)
 
-    features = np.array(alert.features).reshape(1, -1)
+    # ── Handle missing features - generate from alert metadata ────────────────
+    if alert.features is None or len(alert.features) < 77:
+        # Generate 77 synthetic features from available alert data
+        # This allows /detect to work with simple alert JSON without full CICIDS features
+        base_features = [0.0] * 77
+        
+        # Protocol encoding (index 0)
+        proto_map = {"TCP": 6, "UDP": 17, "ICMP": 1}
+        base_features[0] = float(proto_map.get(str(alert.protocol or "").upper(), 0))
+        
+        # Port as proxy for some features
+        port_val = float(alert.port or 0)
+        base_features[4] = port_val  # Can represent flow characteristic
+        
+        # Severity-based feature injection
+        sev_map = {"critical": 0.95, "high": 0.8, "medium": 0.5, "low": 0.2}
+        sev_score = sev_map.get(str(alert.severity or "medium").lower(), 0.5)
+        
+        # Attack type influences anomaly indicators
+        attack_lower = str(alert.alert_type or "").lower()
+        if "ddos" in attack_lower:
+            base_features[2] = 10000.0   # Total Fwd Packets (high)
+            base_features[14] = 1500000.0  # Flow Bytes/s (high)
+            base_features[44] = 800.0    # SYN Flag Count (high)
+        elif "scan" in attack_lower or "portscan" in attack_lower:
+            base_features[44] = 500.0    # SYN Flag Count
+            base_features[15] = 800.0    # Flow Packets/s
+        elif "brute" in attack_lower:
+            base_features[2] = 100.0     # Total Fwd Packets
+            base_features[3] = 100.0     # Total Backward Packets
+        elif "zeus" in attack_lower or "botnet" in attack_lower:
+            base_features[14] = 50000.0  # Flow Bytes/s
+            base_features[2] = 500.0     # Total Fwd Packets
+        elif "sql" in attack_lower or "injection" in attack_lower:
+            base_features[4] = 3306.0    # MySQL port
+            base_features[14] = 10000.0  # Flow Bytes/s
+        
+        # Blend in any partial features provided
+        if alert.features:
+            for i, f in enumerate(alert.features[:77]):
+                if f is not None:
+                    base_features[i] = float(f)
+        
+        features = np.array(base_features).reshape(1, -1)
+    else:
+        features = np.array(alert.features).reshape(1, -1)
 
     # ── Isolation Forest ──────────────────────────────────────────────────────
     scaled    = state["cicids_scaler"].transform(features)

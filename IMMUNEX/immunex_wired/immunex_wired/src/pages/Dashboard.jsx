@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getOrchestratorHealth, getLayerHealthStats, getMeshNodes, getPendingApprovals } from '../api/immunexApi';
+import { getOrchestratorHealth, getLayerHealthStats, getMeshNodes, getPendingApprovals, getRecentAlerts, getOrchestratorMetrics } from '../api/immunexApi';
 
 export default function Dashboard({ navigateTo }) {
   const [expandedRows, setExpandedRows] = useState({});
@@ -17,9 +17,58 @@ export default function Dashboard({ navigateTo }) {
   const [liveAlerts, setLiveAlerts] = useState([]);
   const [lastRefresh, setLastRefresh] = useState(null);
   const [orchestratorOnline, setOrchestratorOnline] = useState(null);
+  const [metricsHistory, setMetricsHistory] = useState([]);
 
   const criticalCount = liveAlerts.filter(a => a.sev === 'critical').length;
   const activeCount   = liveAlerts.filter(a => a.status === 'active' || a.status === 'unresolved').length;
+
+  // Simple metrics chart component
+  const MetricsChart = ({ data, height = 80 }) => {
+    const canvasRef = React.useRef(null);
+    
+    React.useEffect(() => {
+      const canvas = canvasRef.current;
+      if (!canvas || !data.length) return;
+      
+      const ctx = canvas.getContext('2d');
+      const W = canvas.offsetWidth || 300;
+      const H = height;
+      canvas.width = W;
+      canvas.height = H;
+      
+      ctx.clearRect(0, 0, W, H);
+      
+      if (data.length < 2) return;
+      
+      const maxVal = Math.max(...data) || 1;
+      const points = data.map((val, i) => ({
+        x: (i / (data.length - 1)) * W,
+        y: H - ((val / maxVal) * H * 0.8) - H * 0.1
+      }));
+      
+      // Gradient fill
+      const grad = ctx.createLinearGradient(0, 0, 0, H);
+      grad.addColorStop(0, 'rgba(0,212,170,0.3)');
+      grad.addColorStop(1, 'rgba(0,212,170,0.05)');
+      
+      ctx.beginPath();
+      ctx.moveTo(points[0].x, H);
+      points.forEach(p => ctx.lineTo(p.x, p.y));
+      ctx.lineTo(points[points.length - 1].x, H);
+      ctx.closePath();
+      ctx.fillStyle = grad;
+      ctx.fill();
+      
+      // Line
+      ctx.beginPath();
+      points.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
+      ctx.strokeStyle = '#00d4aa';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }, [data, height]);
+    
+    return <canvas ref={canvasRef} style={{ width: '100%', height: `${height}px`, display: 'block' }} />;
+  };
 
   const fetchHealth = async () => {
     try {
@@ -27,6 +76,19 @@ export default function Dashboard({ navigateTo }) {
       setOrchestratorOnline(true);
       const stats = await getLayerHealthStats();
       setLayerHealth(stats);
+      
+      // Fetch metrics for charting
+      try {
+        const metrics = await getOrchestratorMetrics();
+        const newPoint = {
+          timestamp: Date.now(),
+          threats: metrics.counters?.pipeline_anomalous || 0,
+          processed: metrics.counters?.pipeline_started || 0,
+          uptime: metrics.metrics?.uptime_seconds || 0
+        };
+        setMetricsHistory(prev => [...prev.slice(-19), newPoint]); // Keep last 20 points
+      } catch {}
+      
       setLastRefresh(new Date().toLocaleTimeString('en', { hour12: false }));
     } catch {
       setOrchestratorOnline(false);
@@ -53,11 +115,26 @@ export default function Dashboard({ navigateTo }) {
     } catch {}
   };
 
+  const fetchAlerts = async () => {
+    try {
+      const alerts = await getRecentAlerts();
+      setLiveAlerts(alerts);
+    } catch {
+      // Keep existing alerts on error
+    }
+  };
+
   useEffect(() => {
     fetchHealth();
     fetchNodes();
     fetchPending();
-    const iv = setInterval(() => { fetchHealth(); fetchNodes(); fetchPending(); }, 30000);
+    fetchAlerts();
+    const iv = setInterval(() => { 
+      fetchHealth(); 
+      fetchNodes(); 
+      fetchPending(); 
+      fetchAlerts(); 
+    }, 30000);
     return () => clearInterval(iv);
   }, []);
 
@@ -241,6 +318,27 @@ export default function Dashboard({ navigateTo }) {
                 </div>
               );
             })}
+          </div>
+        </div>
+
+        {/* ── Live Metrics Chart ── */}
+        <div style={{ marginBottom: 32 }}>
+          <h2 className="section-title" style={{ marginBottom: 14 }}>Threat Detection Trends</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <div className="card" style={{ padding: 16 }}>
+              <div style={{ marginBottom: 8, fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--text3)' }}>Threats Detected</div>
+              <MetricsChart data={metricsHistory.map(m => m.threats)} height={60} />
+              <div style={{ marginTop: 8, fontFamily: 'var(--mono)', fontSize: 14, fontWeight: 600 }}>
+                {metricsHistory.length > 0 ? metricsHistory[metricsHistory.length - 1].threats : 0} total
+              </div>
+            </div>
+            <div className="card" style={{ padding: 16 }}>
+              <div style={{ marginBottom: 8, fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--text3)' }}>Logs Processed</div>
+              <MetricsChart data={metricsHistory.map(m => m.processed)} height={60} />
+              <div style={{ marginTop: 8, fontFamily: 'var(--mono)', fontSize: 14, fontWeight: 600 }}>
+                {metricsHistory.length > 0 ? metricsHistory[metricsHistory.length - 1].processed : 0} total
+              </div>
+            </div>
           </div>
         </div>
 

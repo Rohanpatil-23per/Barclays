@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { retrainLayer4, LAYER4 } from '../api/immunexApi';
+import { retrainLayer4, LAYER4, getLayer4Status } from '../api/immunexApi';
 
 export default function AISEngine() {
   const [mutating, setMutating]   = useState(false);
@@ -11,9 +11,35 @@ export default function AISEngine() {
   const [epoch, setEpoch]         = useState(0);
   const [backendUsed, setBackendUsed] = useState(false);
   const [backendError, setBackendError] = useState('');
+  const [l4Status, setL4Status]   = useState(null);
+  const [retrainCount, setRetrainCount] = useState(0);
+  const [predictionsCount, setPredictionsCount] = useState(0);
 
   const canvasRef = useRef(null);
   const logRef    = useRef(null);
+
+  // Fetch real Layer 4 status on mount
+  useEffect(() => {
+    const fetchL4Status = async () => {
+      try {
+        const status = await getLayer4Status();
+        setL4Status(status);
+        if (status.model_accuracy) {
+          const realAcc = status.model_accuracy > 1 ? status.model_accuracy : status.model_accuracy * 100;
+          setAcc(parseFloat(realAcc.toFixed(1)));
+          setHistory([parseFloat(realAcc.toFixed(1))]);
+        }
+        if (status.retrain_count !== undefined) setRetrainCount(status.retrain_count);
+        if (status.predictions_made !== undefined) setPredictionsCount(status.predictions_made);
+        setBackendUsed(true);
+      } catch (e) {
+        setBackendError('Layer 4 offline - using simulation');
+      }
+    };
+    fetchL4Status();
+    const iv = setInterval(fetchL4Status, 15000);
+    return () => clearInterval(iv);
+  }, []);
 
   const drawChart = (hist) => {
     const canvas = canvasRef.current;
@@ -145,16 +171,28 @@ export default function AISEngine() {
             The Adaptive Immunity System continuously monitors for novel attack signatures not present in the current threat model. When a blindspot is detected, AIS automatically initiates a micro-retraining cycle without service interruption.
           </div>
 
-          {backendUsed && (
+          {backendUsed && !backendError && (
             <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--accentbg)', background: 'rgba(61,90,62,0.08)', border: '1px solid rgba(61,90,62,0.3)', borderRadius: 6, padding: '6px 10px', marginBottom: 10 }}>
-              ✓ L4 retrain triggered on {LAYER4}
+              ✓ Connected to {LAYER4}
             </div>
           )}
           {backendError && (
             <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--red)', background: 'rgba(192,57,43,0.06)', border: '1px solid rgba(192,57,43,0.2)', borderRadius: 6, padding: '6px 10px', marginBottom: 10 }}>
-              Simulation mode active
+              {backendError}
             </div>
           )}
+
+          {/* Real-time stats from Layer 4 */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
+            <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 12px' }}>
+              <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--text3)', marginBottom: 4 }}>Predictions Made</div>
+              <div style={{ fontFamily: 'var(--mono)', fontSize: 18, fontWeight: 600 }}>{predictionsCount.toLocaleString()}</div>
+            </div>
+            <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 12px' }}>
+              <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--text3)', marginBottom: 4 }}>Retrain Cycles</div>
+              <div style={{ fontFamily: 'var(--mono)', fontSize: 18, fontWeight: 600 }}>{retrainCount}</div>
+            </div>
+          </div>
 
           <div className={`ais-success-banner ${success ? 'show' : ''}`} style={{ display: success ? 'block' : 'none' }}>✓ BLINDSPOT PATCHED — MODEL RECOVERED</div>
 
