@@ -20,14 +20,15 @@ from layer1_detection.inference_utils import load_top_features, serialize_featur
 from layer1_detection.faiss_index import FAISSIndex
 
 # ── Config ────────────────────────────────────────────────────────────────────
-CICIDS_PATH    = "models/roberta_layer1"
-UNSW_PATH      = "models/roberta_unsw"
-ISO_PATH       = "models/isolation_forest.pkl"
-CICIDS_SCALER  = "models/layer1_scaler.pkl"
-UNSW_SCALER    = "models/unsw_scaler.pkl"
-STATS_PATH     = "models/iso_forest_stats.json"
-FEATS_PATH     = "master_dataset/top_features.json"
-UNSW_FEATS     = "models/unsw_features.json"
+BASE_DIR       = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+CICIDS_PATH    = os.path.join(BASE_DIR, "models/roberta_layer1")
+UNSW_PATH      = os.path.join(BASE_DIR, "models/roberta_unsw")
+ISO_PATH       = os.path.join(BASE_DIR, "models/isolation_forest.pkl")
+CICIDS_SCALER  = os.path.join(BASE_DIR, "models/layer1_scaler.pkl")
+UNSW_SCALER    = os.path.join(BASE_DIR, "models/unsw_scaler.pkl")
+STATS_PATH     = os.path.join(BASE_DIR, "models/iso_forest_stats.json")
+FEATS_PATH     = os.path.join(BASE_DIR, "master_dataset/top_features.json")
+UNSW_FEATS     = os.path.join(BASE_DIR, "models/unsw_features.json")
 OLLAMA_URL     = os.getenv("OLLAMA_URL", "http://localhost:11434")
 OLLAMA_MODEL   = os.getenv("OLLAMA_MODEL", "llama3.1:8b")
 DEVICE         = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -42,14 +43,14 @@ async def lifespan(app: FastAPI):
     print(f"Loading models on {DEVICE}...")
 
     # CICIDS RoBERTa
-    state["cicids_tok"] = RobertaTokenizer.from_pretrained(CICIDS_PATH)
-    state["cicids_rob"] = RobertaForSequenceClassification.from_pretrained(CICIDS_PATH)
+    state["cicids_tok"] = RobertaTokenizer.from_pretrained(CICIDS_PATH, local_files_only=True)
+    state["cicids_rob"] = RobertaForSequenceClassification.from_pretrained(CICIDS_PATH, local_files_only=True)
     state["cicids_rob"].to(DEVICE)
     state["cicids_rob"].eval()
 
     # UNSW RoBERTa
-    state["unsw_tok"] = RobertaTokenizer.from_pretrained(UNSW_PATH)
-    state["unsw_rob"] = RobertaForSequenceClassification.from_pretrained(UNSW_PATH)
+    state["unsw_tok"] = RobertaTokenizer.from_pretrained(UNSW_PATH, local_files_only=True)
+    state["unsw_rob"] = RobertaForSequenceClassification.from_pretrained(UNSW_PATH, local_files_only=True)
     state["unsw_rob"].to(DEVICE)
     state["unsw_rob"].eval()
 
