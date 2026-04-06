@@ -32,8 +32,12 @@ import os
 import pickle
 import logging
 import traceback
+import sqlite3
+import threading
+import json
 from datetime import datetime, timezone
-from typing import List, Optional, Any
+from typing import List, Optional, Any, Dict
+from contextlib import contextmanager
 
 import numpy as np
 import torch
@@ -50,6 +54,309 @@ logging.basicConfig(
 logger = logging.getLogger("layer5")
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH  = os.path.join(BASE_DIR, "threat_memory.db")
+
+
+# ─────────────────────────────────────────────────────────────
+# SQLite Persistence Layer — FIX 8
+# ─────────────────────────────────────────────────────────────
+class ThreatMemoryDB:
+    """
+    Thread-safe SQLite persistence for Layer 5 Threat Memory.
+    Stores:
+      - Attack chains (chain_id → observations, state, metadata)
+      - Prediction history for audit trail
+      - Observation sequences per attacker IP
+    """
+    _local = threading.local()
+
+    def __init__(self, db_path: str = DB_PATH):
+        self.db_path = db_path
+        self._init_db()
+
+    def _get_conn(self) -> sqlite3.Connection:
+        """Get thread-local connection."""
+        if not hasattr(self._local, 'conn') or self._local.conn is None:
+            self._local.conn = sqlite3.connect(self.db_path, check_same_thread=False)
+            self._local.conn.row_factory = sqlite3.Row
+        return self._local.conn
+
+    @contextmanager
+    def _cursor(self):
+        """Context manager for cursor with auto-commit."""
+        conn = self._get_conn()
+        cursor = conn.cursor()
+        try:
+            yield cursor
+            conn.commit()
+        except Exception as e:
+            conn.rollback()
+            raise e
+
+    def _init_db(self):
+        """Initialize database schema."""
+        with self._cursor() as cur:
+            # Attack chains table
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS attack_chains (
+                    chain_id TEXT PRIMARY KEY,
+                    target_ip TEXT NOT NULL,
+                    first_seen TEXT NOT NULL,
+                    last_seen TEXT NOT NULL,
+                    current_state TEXT DEFAULT 'Reconnaissance',
+                    risk_level TEXT DEFAULT 'LOW',
+                    observation_count INTEGER DEFAULT 0,
+                    is_active INTEGER DEFAULT 1
+                )
+            """)
+
+            # Observations table (sequence per chain)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS observations (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    chain_id TEXT NOT NULL,
+                    timestamp TEXT NOT NULL,
+                    obs_name TEXT NOT NULL,
+                    obs_id INTEGER NOT NULL,
+                    attack_type TEXT,
+                    FOREIGN KEY (chain_id) REFERENCES attack_chains(chain_id)
+                )
+            """)
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_obs_chain ON observations(chain_id)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_obs_time ON observations(timestamp)")
+
+            # Predictions audit log
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS predictions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    chain_id TEXT,
+                    timestamp TEXT NOT NULL,
+                    target_ip TEXT,
+                    attack_type TEXT,
+                    predicted_state TEXT,
+                    risk_level TEXT,
+                    confidence REAL,
+                    lstm_state TEXT,
+                    hmm_state TEXT,
+                    predicted_threats TEXT,
+                    playbook TEXT
+                )
+            """)
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_pred_chain ON predictions(chain_id)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_pred_time ON predictions(timestamp)")
+
+            # Attacker profiles (IP-based aggregation)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS attacker_profiles (
+                    ip TEXT PRIMARY KEY,
+                    first_seen TEXT NOT NULL,
+                    last_seen TEXT NOT NULL,
+                    total_observations INTEGER DEFAULT 0,
+                    max_state_reached TEXT DEFAULT 'Reconnaissance',
+                    chain_ids TEXT DEFAULT '[]'
+                )
+            """)
+
+        logger.info(f"SQLite DB initialized at {self.db_path}")
+
+    def get_or_create_chain(self, chain_id: str, target_ip: str) -> Dict:
+        """Get existing chain or create new one."""
+        now = datetime.now(timezone.utc).isoformat()
+        with self._cursor() as cur:
+            cur.execute("SELECT * FROM attack_chains WHERE chain_id = ?", (chain_id,))
+            row = cur.fetchone()
+            if row:
+                return dict(row)
+
+            # Create new chain
+            cur.execute("""
+                INSERT INTO attack_chains (chain_id, target_ip, first_seen, last_seen)
+                VALUES (?, ?, ?, ?)
+            """, (chain_id, target_ip, now, now))
+            return {
+                "chain_id": chain_id,
+                "target_ip": target_ip,
+                "first_seen": now,
+                "last_seen": now,
+                "current_state": "Reconnaissance",
+                "risk_level": "LOW",
+                "observation_count": 0,
+                "is_active": 1
+            }
+
+    def add_observation(self, chain_id: str, obs_name: str, obs_id: int, attack_type: str = None):
+        """Add an observation to a chain's sequence."""
+        now = datetime.now(timezone.utc).isoformat()
+        with self._cursor() as cur:
+            cur.execute("""
+                INSERT INTO observations (chain_id, timestamp, obs_name, obs_id, attack_type)
+                VALUES (?, ?, ?, ?, ?)
+            """, (chain_id, now, obs_name, obs_id, attack_type))
+
+            cur.execute("""
+                UPDATE attack_chains 
+                SET last_seen = ?, observation_count = observation_count + 1
+                WHERE chain_id = ?
+            """, (now, chain_id))
+
+    def get_observation_sequence(self, chain_id: str, limit: int = 50) -> List[int]:
+        """Get observation sequence for a chain (most recent first, then reversed)."""
+        with self._cursor() as cur:
+            cur.execute("""
+                SELECT obs_id FROM observations 
+                WHERE chain_id = ?
+                ORDER BY timestamp DESC
+                LIMIT ?
+            """, (chain_id, limit))
+            rows = cur.fetchall()
+            return [r['obs_id'] for r in reversed(rows)]
+
+    def update_chain_state(self, chain_id: str, state: str, risk_level: str):
+        """Update chain's current state and risk level."""
+        now = datetime.now(timezone.utc).isoformat()
+        with self._cursor() as cur:
+            cur.execute("""
+                UPDATE attack_chains 
+                SET current_state = ?, risk_level = ?, last_seen = ?
+                WHERE chain_id = ?
+            """, (state, risk_level, now, chain_id))
+
+    def log_prediction(self, prediction: Dict):
+        """Log prediction for audit trail."""
+        with self._cursor() as cur:
+            cur.execute("""
+                INSERT INTO predictions 
+                (chain_id, timestamp, target_ip, attack_type, predicted_state, 
+                 risk_level, confidence, lstm_state, hmm_state, predicted_threats, playbook)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                prediction.get("chain_id"),
+                prediction.get("timestamp"),
+                prediction.get("target_ip"),
+                prediction.get("attack_type"),
+                prediction.get("current_state"),
+                prediction.get("risk_level"),
+                prediction.get("confidence"),
+                prediction.get("lstm_state"),
+                prediction.get("hmm_state"),
+                json.dumps(prediction.get("predicted_threats", [])),
+                prediction.get("playbook")
+            ))
+
+    def update_attacker_profile(self, ip: str, chain_id: str, state: str):
+        """Update or create attacker profile."""
+        now = datetime.now(timezone.utc).isoformat()
+        with self._cursor() as cur:
+            cur.execute("SELECT * FROM attacker_profiles WHERE ip = ?", (ip,))
+            row = cur.fetchone()
+
+            if row:
+                chain_ids = json.loads(row['chain_ids'])
+                if chain_id not in chain_ids:
+                    chain_ids.append(chain_id)
+                # Track highest state reached
+                state_order = ["Reconnaissance", "Initial_Access", "Privilege_Escalation", 
+                              "Lateral_Movement", "Exfiltration"]
+                current_max = row['max_state_reached']
+                if state in state_order and current_max in state_order:
+                    if state_order.index(state) > state_order.index(current_max):
+                        current_max = state
+
+                cur.execute("""
+                    UPDATE attacker_profiles 
+                    SET last_seen = ?, total_observations = total_observations + 1,
+                        max_state_reached = ?, chain_ids = ?
+                    WHERE ip = ?
+                """, (now, current_max, json.dumps(chain_ids), ip))
+            else:
+                cur.execute("""
+                    INSERT INTO attacker_profiles 
+                    (ip, first_seen, last_seen, total_observations, max_state_reached, chain_ids)
+                    VALUES (?, ?, ?, 1, ?, ?)
+                """, (ip, now, now, state, json.dumps([chain_id])))
+
+    def get_chain_history(self, chain_id: str) -> Dict:
+        """Get full chain history for analysis."""
+        with self._cursor() as cur:
+            cur.execute("SELECT * FROM attack_chains WHERE chain_id = ?", (chain_id,))
+            chain = cur.fetchone()
+            if not chain:
+                return None
+
+            cur.execute("""
+                SELECT * FROM observations WHERE chain_id = ?
+                ORDER BY timestamp ASC
+            """, (chain_id,))
+            observations = [dict(r) for r in cur.fetchall()]
+
+            cur.execute("""
+                SELECT * FROM predictions WHERE chain_id = ?
+                ORDER BY timestamp DESC LIMIT 10
+            """, (chain_id,))
+            recent_predictions = [dict(r) for r in cur.fetchall()]
+
+            return {
+                "chain": dict(chain),
+                "observations": observations,
+                "recent_predictions": recent_predictions
+            }
+
+    def get_active_chains(self, limit: int = 100) -> List[Dict]:
+        """Get active attack chains."""
+        with self._cursor() as cur:
+            cur.execute("""
+                SELECT * FROM attack_chains 
+                WHERE is_active = 1
+                ORDER BY last_seen DESC
+                LIMIT ?
+            """, (limit,))
+            return [dict(r) for r in cur.fetchall()]
+
+    def get_attacker_profile(self, ip: str) -> Dict:
+        """Get attacker profile by IP."""
+        with self._cursor() as cur:
+            cur.execute("SELECT * FROM attacker_profiles WHERE ip = ?", (ip,))
+            row = cur.fetchone()
+            if row:
+                profile = dict(row)
+                profile['chain_ids'] = json.loads(profile['chain_ids'])
+                return profile
+            return None
+
+    def get_stats(self) -> Dict:
+        """Get database statistics."""
+        with self._cursor() as cur:
+            cur.execute("SELECT COUNT(*) as cnt FROM attack_chains WHERE is_active = 1")
+            active_chains = cur.fetchone()['cnt']
+
+            cur.execute("SELECT COUNT(*) as cnt FROM observations")
+            total_obs = cur.fetchone()['cnt']
+
+            cur.execute("SELECT COUNT(*) as cnt FROM predictions")
+            total_preds = cur.fetchone()['cnt']
+
+            cur.execute("SELECT COUNT(*) as cnt FROM attacker_profiles")
+            total_attackers = cur.fetchone()['cnt']
+
+            cur.execute("""
+                SELECT risk_level, COUNT(*) as cnt 
+                FROM attack_chains WHERE is_active = 1
+                GROUP BY risk_level
+            """)
+            risk_dist = {r['risk_level']: r['cnt'] for r in cur.fetchall()}
+
+            return {
+                "active_chains": active_chains,
+                "total_observations": total_obs,
+                "total_predictions": total_preds,
+                "known_attackers": total_attackers,
+                "risk_distribution": risk_dist
+            }
+
+
+# Global DB instance
+threat_db = ThreatMemoryDB()
+
 
 # ─────────────────────────────────────────────────────────────
 # Observation + State mappings
@@ -341,12 +648,15 @@ async def startup():
 
 @app.get("/health")
 def health():
+    db_stats = threat_db.get_stats()
     return {
         "status": "ok",
         "layer":  5,
         "device": str(models.device),
         "lstm":   "loaded" if models.lstm_ok  else "fallback",
         "hmm":    "loaded" if models.hmm_ok   else "fallback",
+        "persistence": "sqlite",
+        "db_stats": db_stats
     }
 
 
@@ -356,6 +666,8 @@ async def predict(req: PredictRequest):
         # ── Build observation sequence from available context ─
         attack_type = req.attack_type or ""
         mitre_stage = req.mitre_stage or ""
+        target_ip = req.target_ip or "unknown"
+        chain_id = req.chain_id or f"chain_{target_ip}_{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}"
 
         obs_name = ATTACK_TO_OBS.get(attack_type, None)
         if not obs_name:
@@ -372,20 +684,33 @@ async def predict(req: PredictRequest):
             obs_name = stage_obs_map.get(mitre_stage, "port_scan")
 
         obs_id  = OBS_TO_ID.get(obs_name, 0)
-        # Build a short realistic sequence leading to this observation
-        OBS_SEQUENCES = {
-            "port_scan":        [0, 0, 1],
-            "dns_query":        [1, 0, 1],
-            "phishing_click":   [0, 1, 2],
-            "login_fail":       [0, 2, 3],
-            "login_success":    [3, 3, 4],
-            "priv_escalation":  [3, 4, 5],
-            "lateral_movement": [4, 5, 6],
-            "file_access":      [6, 5, 7],
-            "large_upload":     [7, 6, 8],
-            "zip_creation":     [7, 8, 9],
-        }
-        obs_sequence = OBS_SEQUENCES.get(obs_name, [obs_id])
+
+        # ── FIX 8: Persist observation and get historical sequence ─
+        # Get or create the attack chain
+        threat_db.get_or_create_chain(chain_id, target_ip)
+        
+        # Add this observation to the chain
+        threat_db.add_observation(chain_id, obs_name, obs_id, attack_type)
+        
+        # Get historical observation sequence from DB (real sequence, not synthetic)
+        obs_sequence = threat_db.get_observation_sequence(chain_id, limit=50)
+        
+        # If sequence is too short, pad with synthetic prefix
+        if len(obs_sequence) < 3:
+            OBS_SEQUENCES = {
+                "port_scan":        [0, 0, 1],
+                "dns_query":        [1, 0, 1],
+                "phishing_click":   [0, 1, 2],
+                "login_fail":       [0, 2, 3],
+                "login_success":    [3, 3, 4],
+                "priv_escalation":  [3, 4, 5],
+                "lateral_movement": [4, 5, 6],
+                "file_access":      [6, 5, 7],
+                "large_upload":     [7, 6, 8],
+                "zip_creation":     [7, 8, 9],
+            }
+            synthetic = OBS_SEQUENCES.get(obs_name, [obs_id])
+            obs_sequence = synthetic[:-1] + obs_sequence  # Prepend synthetic context
 
         # ── HMM: infer kill chain stage ───────────────────────
         hmm_state, hmm_state_probs = models.predict_hmm(obs_sequence)
@@ -405,9 +730,10 @@ async def predict(req: PredictRequest):
         threats  = STATE_TO_THREATS.get(current_state, ["Unknown threat vector"])
         playbook = STATE_TO_PLAYBOOK.get(current_state, "Monitor and investigate.")
         risk     = STATE_RISK.get(current_state, "MEDIUM")
+        timestamp = datetime.now(timezone.utc).isoformat()
 
         result = {
-            "chain_id":          req.chain_id,
+            "chain_id":          chain_id,
             "current_state":     current_state,
             "predicted_threats": threats,
             "time_window":       "2-6 hours",
@@ -425,13 +751,19 @@ async def predict(req: PredictRequest):
             "risk_level":        risk,
             "observation":       obs_name,
             "attack_type":       attack_type,
-            "target_ip":         req.target_ip,
-            "timestamp":         datetime.now(timezone.utc).isoformat(),
+            "target_ip":         target_ip,
+            "timestamp":         timestamp,
+            "observation_count": len(obs_sequence),
         }
 
+        # ── FIX 8: Persist prediction and update chain state ─
+        threat_db.update_chain_state(chain_id, current_state, risk)
+        threat_db.log_prediction(result)
+        threat_db.update_attacker_profile(target_ip, chain_id, current_state)
+
         logger.info(
-            f"Predicted {req.chain_id} | state={current_state} "
-            f"| risk={risk} | conf={confidence:.3f}"
+            f"Predicted {chain_id} | state={current_state} "
+            f"| risk={risk} | conf={confidence:.3f} | obs_count={len(obs_sequence)}"
         )
         return result
 
@@ -444,6 +776,41 @@ async def predict(req: PredictRequest):
 @app.post("/explain")
 async def explain(req: PredictRequest):
     return await predict(req)
+
+
+# ─────────────────────────────────────────────────────────────
+# FIX 8: Additional endpoints for persistence features
+# ─────────────────────────────────────────────────────────────
+
+@app.get("/chains")
+async def get_active_chains(limit: int = 100):
+    """Get all active attack chains."""
+    chains = threat_db.get_active_chains(limit)
+    return {"chains": chains, "count": len(chains)}
+
+
+@app.get("/chain/{chain_id}")
+async def get_chain_history(chain_id: str):
+    """Get full history for a specific chain."""
+    history = threat_db.get_chain_history(chain_id)
+    if not history:
+        raise HTTPException(status_code=404, detail=f"Chain {chain_id} not found")
+    return history
+
+
+@app.get("/attacker/{ip}")
+async def get_attacker_profile(ip: str):
+    """Get attacker profile by IP."""
+    profile = threat_db.get_attacker_profile(ip)
+    if not profile:
+        raise HTTPException(status_code=404, detail=f"No profile for IP {ip}")
+    return profile
+
+
+@app.get("/stats")
+async def get_stats():
+    """Get database statistics."""
+    return threat_db.get_stats()
 
 
 if __name__ == "__main__":
