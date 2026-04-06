@@ -307,6 +307,253 @@ def stats():
         "kafka_topics":  ["immunex_raw_alerts", "immunex_anomaly_results",
                           "immunex_attack_graphs", "immunex_responses", "immunex_playbooks"],
     }
+
+# ── Batch Ingestion Endpoint ──────────────────────────────────────────────────
+import asyncio
+import time
+import logging
+logger = logging.getLogger("layer1")
+
+from pydantic import BaseModel as PydanticBaseModel
+
+class BatchIngestAlert(PydanticBaseModel):
+    alert_id:    str = ""
+    timestamp:   str = ""
+    source_ip:   str = "0.0.0.0"
+    dest_ip:     str = "0.0.0.0"
+    alert_type:  str = "unknown"
+    severity:    float = 0.5
+    features:    list = []
+    event_type:  str = ""
+    protocol:    str = ""
+    port:        int = 0
+    username:    str = ""
+    process:     str = ""
+    file:        str = ""
+    privilege_level: str = ""
+    source_type: str = "siem"
+    raw_event:   dict = {}
+
+class BatchIngestRequest(PydanticBaseModel):
+    alerts: list[BatchIngestAlert]
+
+class BatchIngestResponse(PydanticBaseModel):
+    total: int
+    anomalous: int
+    rejected_by_relevance: int
+    processing_time_ms: float
+    throughput: float
+    results: list[dict]
+
+
+async def _process_single_ingest(
+    alert_data: BatchIngestAlert, 
+    state: dict, 
+    relevance_analyzer,
+    semaphore: asyncio.Semaphore
+) -> dict:
+    """Process a single alert through the full pipeline."""
+    async with semaphore:
+        try:
+            from layer1_detection.ingestion import EventNormalizer
+            from shared.schemas import Alert
+            import uuid
+            from datetime import datetime
+            
+            # Normalize if raw_event provided, otherwise use direct fields
+            if alert_data.raw_event:
+                norm = EventNormalizer()
+                normalized = norm.normalize(alert_data.raw_event, alert_data.source_type)
+                if normalized:
+                    alert = normalized
+                else:
+                    # Fallback to direct fields
+                    alert = Alert(
+                        alert_id=alert_data.alert_id or str(uuid.uuid4()),
+                        timestamp=alert_data.timestamp or datetime.utcnow().isoformat(),
+                        source_ip=alert_data.source_ip,
+                        dest_ip=alert_data.dest_ip,
+                        alert_type=alert_data.alert_type,
+                        severity=alert_data.severity,
+                        features=alert_data.features or [0.0] * 77,
+                        event_type=alert_data.event_type,
+                        protocol=alert_data.protocol,
+                        port=alert_data.port,
+                        username=alert_data.username,
+                        process=alert_data.process,
+                        file=alert_data.file,
+                        privilege_level=alert_data.privilege_level,
+                    )
+            else:
+                alert = Alert(
+                    alert_id=alert_data.alert_id or str(uuid.uuid4()),
+                    timestamp=alert_data.timestamp or datetime.utcnow().isoformat(),
+                    source_ip=alert_data.source_ip,
+                    dest_ip=alert_data.dest_ip,
+                    alert_type=alert_data.alert_type,
+                    severity=alert_data.severity,
+                    features=alert_data.features or [0.0] * 77,
+                    event_type=alert_data.event_type,
+                    protocol=alert_data.protocol,
+                    port=alert_data.port,
+                    username=alert_data.username,
+                    process=alert_data.process,
+                    file=alert_data.file,
+                    privilege_level=alert_data.privilege_level,
+                )
+            
+            # Ensure 77 features
+            features = list(alert.features)
+            if len(features) < 77:
+                features.extend([0.0] * (77 - len(features)))
+            features = features[:77]
+            
+            features_np = np.array(features).reshape(1, -1)
+            
+            # Isolation Forest
+            scaled = state["cicids_scaler"].transform(features_np)
+            iso_score = float(state["iso"].decision_function(scaled)[0])
+            iso_flag = iso_score < state["iso_threshold"]
+            
+            # RoBERTa (individual call - batch version handles this more efficiently)
+            from layer1_detection.inference_utils import serialize_features
+            cicids_text = serialize_features(features, state["cicids_feats"])
+            attack_prob, embedding = _roberta_score(
+                state["cicids_rob"], state["cicids_tok"], cicids_text
+            )
+            
+            # FAISS
+            emb_np = np.array([embedding], dtype=np.float32)
+            D, _ = state["faiss"].index.search(emb_np, 5)
+            faiss_anomalous = float(D[0].min()) > getattr(state["faiss"], 'threshold', 0.7)
+            
+            # Decision fusion
+            is_anomalous = attack_prob > 0.5 or iso_flag or faiss_anomalous
+            anomaly_score = float(np.clip(
+                max(attack_prob, float(iso_flag) * 0.8, float(faiss_anomalous) * 0.7),
+                0.0, 1.0
+            ))
+            
+            if iso_flag and attack_prob > 0.5:
+                method = "both"
+            elif iso_flag:
+                method = "isolation_forest"
+            elif faiss_anomalous:
+                method = "faiss_similarity"
+            else:
+                method = "ensemble"
+            
+            # Relevance check
+            relevance_result = relevance_analyzer.analyze(
+                features=features,
+                prediction={
+                    "anomaly_score": anomaly_score,
+                    "is_anomalous": is_anomalous,
+                    "confidence": attack_prob,
+                },
+                source_ip=alert.source_ip
+            )
+            
+            result = {
+                "alert_id": alert.alert_id,
+                "timestamp": alert.timestamp,
+                "source_ip": alert.source_ip,
+                "dest_ip": alert.dest_ip,
+                "attack_type": alert.alert_type,
+                "anomaly_score": round(anomaly_score, 4),
+                "is_anomalous": is_anomalous,
+                "detection_method": method,
+                "confidence": round(attack_prob, 4),
+                "relevance_passes": relevance_result["passes"],
+                "relevance_score": relevance_result["relevance_score"],
+                "rejection_reason": relevance_result["rejection_reason"],
+            }
+            
+            # Publish to Kafka if anomalous and passes relevance
+            if is_anomalous and relevance_result["passes"]:
+                state["kafka"].send("immunex_alerts", result, key=alert.alert_id)
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"Error processing alert: {e}")
+            return {
+                "alert_id": alert_data.alert_id or "unknown",
+                "error": str(e),
+                "is_anomalous": False,
+                "relevance_passes": False,
+            }
+
+
+@app.post("/ingest/batch", response_model=BatchIngestResponse)
+async def ingest_batch(request: BatchIngestRequest):
+    """
+    Batch ingest endpoint for high-throughput log processing.
+    
+    Accepts up to 10,000 alerts and processes them concurrently.
+    Each alert goes through: normalization → RoBERTa → Isolation Forest → 
+    FAISS → RelevanceAnalyzer → Kafka publish if anomalous.
+    
+    Returns summary with throughput metrics.
+    """
+    if not request.alerts:
+        return BatchIngestResponse(
+            total=0, anomalous=0, rejected_by_relevance=0,
+            processing_time_ms=0, throughput=0, results=[]
+        )
+    
+    # Limit to 10,000 alerts
+    alerts = request.alerts[:10000]
+    n = len(alerts)
+    
+    start_time = time.perf_counter()
+    
+    # Initialize relevance analyzer
+    from layer1_detection.relevance_analyzer import RelevanceAnalyzer
+    relevance_analyzer = RelevanceAnalyzer(device=str(DEVICE))
+    
+    # Semaphore for concurrent processing (max 64)
+    semaphore = asyncio.Semaphore(64)
+    
+    # Process all alerts concurrently
+    tasks = [
+        _process_single_ingest(alert, state, relevance_analyzer, semaphore)
+        for alert in alerts
+    ]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+    
+    # Handle any exceptions
+    processed_results = []
+    for r in results:
+        if isinstance(r, Exception):
+            processed_results.append({
+                "error": str(r),
+                "is_anomalous": False,
+                "relevance_passes": False,
+            })
+        else:
+            processed_results.append(r)
+    
+    elapsed_ms = (time.perf_counter() - start_time) * 1000
+    throughput = round(n / max(elapsed_ms / 1000, 0.001), 1)
+    
+    anomalous_count = sum(1 for r in processed_results if r.get("is_anomalous"))
+    rejected_count = sum(1 for r in processed_results 
+                         if r.get("is_anomalous") and not r.get("relevance_passes"))
+    
+    logger.info(
+        f"[BATCH INGEST] n={n} | {elapsed_ms:.0f}ms | {throughput} logs/s | "
+        f"anomalous={anomalous_count} rejected={rejected_count}"
+    )
+    
+    return BatchIngestResponse(
+        total=n,
+        anomalous=anomalous_count,
+        rejected_by_relevance=rejected_count,
+        processing_time_ms=round(elapsed_ms, 2),
+        throughput=throughput,
+        results=processed_results,
+    )
 from layer1_detection.batch_endpoint import create_batch_detect_endpoint
 create_batch_detect_endpoint(app, state)
 
