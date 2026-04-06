@@ -15,6 +15,8 @@ from shared.kafka_client import IMMUNEXProducer
 from shared.redis_client import IMMUNEXCache
 from shared.es_client import IMMUNEXElastic
 from orchestrator.ingest_api import router as ingest_router, init_ingest
+from orchestrator.security_status import router as security_router
+
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("orchestrator")
@@ -75,6 +77,7 @@ async def lifespan(app: FastAPI):
     logger.info("Orchestrator shutdown")
 
 app = FastAPI(title="IMMUNEX Orchestrator", version="2.0", lifespan=lifespan)
+app.include_router(security_router)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 app.include_router(ingest_router)
 
@@ -237,10 +240,12 @@ async def run_pipeline(alert: Alert):
         "anomaly_score":  l1["anomaly_score"],
         "feature_vector": l1["embedding"],
     }
-    _l4_feats = l1.get("cicids_features") or l1["embedding"][:25]
-    if len(_l4_feats) < 25:
-        _l4_feats = _l4_feats + [0.0] * (25 - len(_l4_feats))
-    l4_payload = {"features": _l4_feats}
+    # FIX 6: Layer 4 now uses 77 features (CICIDS format) - use cicids_features if available
+    # Falls back to embedding[:77] padded to 77 dims if cicids_features not present
+    _l4_feats = l1.get("cicids_features") or l1["embedding"][:77]
+    if len(_l4_feats) < 77:
+        _l4_feats = list(_l4_feats) + [0.0] * (77 - len(_l4_feats))
+    l4_payload = {"features": _l4_feats[:77]}
 
     l2, l4 = await asyncio.gather(
         call_layer(2, "/correlate", l2_payload),
@@ -288,9 +293,11 @@ async def run_pipeline(alert: Alert):
     # L4 retrain gate
     if rf.get("retrain_eligible") and l4 and l4.get("success"):
         try:
+            # FIX 6: L4 retrain expects attack_features (list of 77-dim vectors) and attack_labels
             await call_layer(4, "/retrain", {
-                "features": _l4_feats,
-                "label":    l1.get("attack_type", "unknown"),
+                "attack_features": [_l4_feats],
+                "attack_labels":   [1],  # 1 = attack
+                "trigger_source":  f"orchestrator_{l1.get('attack_type', 'unknown')}",
             })
         except Exception as e:
             logger.warning(f"L4 retrain skipped: {e}")

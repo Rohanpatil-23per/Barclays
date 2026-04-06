@@ -193,8 +193,11 @@ async def detect(alert: Alert):
         effective_attack_type = "Unknown_Novel_Attack"
         method = method + "+novel_flag"
 
-    # ── Pass raw CICIDS scaled features to L4 (semantic signal) ─────────────
-    cicids_features_25 = scaled[0][:25].tolist()
+    # ── Pass raw CICIDS scaled features to L4 (77 features for 77-feature model) ────
+    # FIX 5/6: Layer 4 now uses 77 features, not 25
+    cicids_features_77 = scaled[0][:77].tolist() if len(scaled[0]) >= 77 else (
+        scaled[0].tolist() + [0.0] * (77 - len(scaled[0]))
+    )
 
     result = AnomalyResult(
         alert_id         = alert.alert_id,
@@ -207,7 +210,7 @@ async def detect(alert: Alert):
         embedding        = embedding,
         detection_method = method,
         confidence       = attack_prob,
-        cicids_features  = cicids_features_25,
+        cicids_features  = cicids_features_77,  # FIX 6: 77 features for L4
         event_type       = alert.event_type,
         protocol         = alert.protocol,
         port             = alert.port,
