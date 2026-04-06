@@ -37,6 +37,287 @@ MAX_LEN        = 128
 # ── Global model state ────────────────────────────────────────────────────────
 state = {}
 
+# ── LLM Log Parser Cache ──────────────────────────────────────────────────────
+from functools import lru_cache
+from hashlib import sha256
+import httpx
+import re
+import asyncio
+
+# In-memory cache for parsed logs (max 10,000 entries)
+_llm_parse_cache: dict[str, dict] = {}
+_LLM_CACHE_MAX = 10000
+
+def _cache_key(raw_log: str) -> str:
+    """Generate cache key from raw log content."""
+    return sha256(raw_log.encode()).hexdigest()[:16]
+
+def fast_precheck(raw_log: str) -> dict | None:
+    """
+    Fast pre-check layer for trivial cases. Returns parsed dict if handled,
+    None if LLM parsing is needed.
+    
+    Handles:
+    - Empty or whitespace-only logs
+    - Already valid JSON logs (including nested)
+    - Simple key=value formatted logs
+    """
+    raw_log = raw_log.strip()
+    
+    # Empty log
+    if not raw_log:
+        return {
+            "source_ip": "0.0.0.0",
+            "dest_ip": "0.0.0.0",
+            "protocol": "",
+            "port": 0,
+            "event_type": "empty",
+            "alert_type": "benign",
+            "severity": 0.0,
+            "username": "",
+            "process": "",
+            "file": "",
+            "privilege_level": "",
+            "raw_log": raw_log,
+            "_parser": "fast_precheck_empty"
+        }
+    
+    # Already valid JSON - handle nested structures
+    if raw_log.startswith("{") and raw_log.endswith("}"):
+        try:
+            parsed = json.loads(raw_log)
+            
+            # Helper to recursively find values in nested dicts
+            def find_value(d, *keys):
+                for key in keys:
+                    if isinstance(d, dict):
+                        # Direct key match
+                        if key in d:
+                            val = d[key]
+                            if isinstance(val, dict):
+                                continue  # Don't return nested dicts
+                            return val
+                        # Case-insensitive search
+                        for k, v in d.items():
+                            if k.lower() == key.lower() and not isinstance(v, dict):
+                                return v
+                        # Search nested dicts
+                        for v in d.values():
+                            if isinstance(v, dict):
+                                result = find_value(v, key)
+                                if result:
+                                    return result
+                return None
+            
+            # Extract fields with nested search
+            source_ip = find_value(parsed, "source_ip", "src_ip", "srcip", "src", "sourceIPAddress", "client_ip", "remote_addr")
+            dest_ip = find_value(parsed, "dest_ip", "dst_ip", "dstip", "dst", "destinationIPAddress", "server_ip")
+            username = find_value(parsed, "username", "user", "userName", "user_name", "suser", "account")
+            event_type = find_value(parsed, "event_type", "event", "type", "eventName", "action")
+            
+            result = {
+                "source_ip": str(source_ip) if source_ip else "0.0.0.0",
+                "dest_ip": str(dest_ip) if dest_ip else "0.0.0.0",
+                "protocol": str(find_value(parsed, "protocol", "proto") or ""),
+                "port": int(find_value(parsed, "port", "dst_port", "dport", "dpt") or 0),
+                "event_type": str(event_type) if event_type else "unknown",
+                "alert_type": str(find_value(parsed, "alert_type", "attack_type", "category", "threat_type") or "unknown"),
+                "severity": float(find_value(parsed, "severity", "risk", "priority") or 0.5),
+                "username": str(username) if username else "",
+                "process": str(find_value(parsed, "process", "process_name", "cmd", "command") or ""),
+                "file": str(find_value(parsed, "file", "filename", "path", "filePath") or ""),
+                "privilege_level": str(find_value(parsed, "privilege_level", "priv", "privilege", "access_level") or ""),
+                "raw_log": raw_log,
+                "_parser": "fast_precheck_json",
+                "_original": parsed
+            }
+            return result
+        except json.JSONDecodeError:
+            pass
+    
+    # Simple key=value format - with extended key matching
+    # Matches: key=value, key:value (for CEF extensions)
+    kv_pattern = re.compile(r'(\w+)=([^\s|]+)')
+    matches = kv_pattern.findall(raw_log)
+    
+    if len(matches) >= 3:  # At least 3 key-value pairs
+        kv_dict = {k.lower(): v for k, v in matches}
+        
+        # Extended port field matching (dpt, spt, DPT, etc.)
+        port_val = (kv_dict.get("dpt") or kv_dict.get("port") or kv_dict.get("dport") or 
+                   kv_dict.get("dst_port") or kv_dict.get("spt") or "0")
+        try:
+            port = int(port_val)
+        except:
+            port = 0
+        
+        # Extended severity detection from CEF format
+        severity = 0.5
+        raw_lower = raw_log.lower()
+        if "|high|" in raw_lower or "|critical|" in raw_lower:
+            severity = 0.9
+        elif "|medium|" in raw_lower:
+            severity = 0.6
+        elif "|low|" in raw_lower:
+            severity = 0.3
+        
+        # Detect attack type from CEF/log content
+        alert_type = "unknown"
+        if "zeus" in raw_lower or "botnet" in raw_lower:
+            alert_type = "Zeus_Botnet"
+        elif "scan" in raw_lower:
+            alert_type = "Port_Scan"
+        elif "ddos" in raw_lower:
+            alert_type = "DDoS"
+        elif "brute" in raw_lower or "failed password" in raw_lower:
+            alert_type = "Brute_Force"
+        elif "exfil" in raw_lower:
+            alert_type = "Data_Exfiltration"
+        elif "threat" in raw_lower:
+            alert_type = "Threat_Detected"
+        
+        result = {
+            "source_ip": kv_dict.get("src") or kv_dict.get("source_ip") or kv_dict.get("srcip") or "0.0.0.0",
+            "dest_ip": kv_dict.get("dst") or kv_dict.get("dest_ip") or kv_dict.get("dstip") or "0.0.0.0",
+            "protocol": kv_dict.get("proto") or kv_dict.get("protocol") or "",
+            "port": port,
+            "event_type": kv_dict.get("event") or kv_dict.get("event_type") or kv_dict.get("type") or kv_dict.get("action") or "unknown",
+            "alert_type": alert_type,
+            "severity": severity,
+            "username": kv_dict.get("user") or kv_dict.get("username") or kv_dict.get("suser") or "",
+            "process": kv_dict.get("process") or kv_dict.get("cmd") or "",
+            "file": kv_dict.get("file") or kv_dict.get("path") or kv_dict.get("target") or "",
+            "privilege_level": kv_dict.get("priv") or kv_dict.get("privilege") or "",
+            "raw_log": raw_log,
+            "_parser": "fast_precheck_kv"
+        }
+        return result
+    
+    # Not a trivial case - needs LLM parsing
+    return None
+
+
+async def llm_parse_log(raw_log: str, timeout: float = 30.0) -> dict:
+    """
+    Use Ollama LLM to dynamically extract structured fields from any log format.
+    
+    Supports: syslog, CEF, LEEF, JSON, Windows Event XML, netflow, Apache/Nginx,
+    firewall logs, IDS alerts, plain text, and any other format.
+    """
+    prompt = f"""You are a cybersecurity log parser. Extract structured fields from the following raw log entry.
+
+RAW LOG:
+{raw_log}
+
+Extract these fields (use empty string or 0 if not present):
+- source_ip: Source IP address
+- dest_ip: Destination IP address  
+- protocol: Network protocol (TCP, UDP, ICMP, etc.)
+- port: Destination port number
+- event_type: Type of event (login, connection, alert, etc.)
+- alert_type: Attack category if malicious (DDoS, SQL_Injection, Brute_Force, etc.) or "benign"
+- severity: Risk level 0.0-1.0 (0=benign, 1=critical)
+- username: Username involved if any
+- process: Process name if any
+- file: File path if any
+- privilege_level: Privilege level (admin, user, root, system, etc.)
+
+Respond ONLY with a valid JSON object, no explanation:
+{{"source_ip":"...","dest_ip":"...","protocol":"...","port":0,"event_type":"...","alert_type":"...","severity":0.0,"username":"...","process":"...","file":"...","privilege_level":"..."}}"""
+
+    try:
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            response = await client.post(
+                f"{OLLAMA_URL}/api/generate",
+                json={
+                    "model": OLLAMA_MODEL,
+                    "prompt": prompt,
+                    "stream": False,
+                    "options": {
+                        "temperature": 0.1,  # Low temp for consistent parsing
+                        "num_predict": 300,  # Limit output tokens
+                    }
+                }
+            )
+            response.raise_for_status()
+            
+            llm_response = response.json().get("response", "")
+            
+            # Extract JSON from response (handle potential markdown code blocks)
+            json_match = re.search(r'\{[^{}]*\}', llm_response, re.DOTALL)
+            if json_match:
+                parsed = json.loads(json_match.group())
+                # Normalize and validate
+                result = {
+                    "source_ip": str(parsed.get("source_ip", "0.0.0.0")) or "0.0.0.0",
+                    "dest_ip": str(parsed.get("dest_ip", "0.0.0.0")) or "0.0.0.0",
+                    "protocol": str(parsed.get("protocol", "")) or "",
+                    "port": int(parsed.get("port", 0) or 0),
+                    "event_type": str(parsed.get("event_type", "unknown")) or "unknown",
+                    "alert_type": str(parsed.get("alert_type", "unknown")) or "unknown",
+                    "severity": float(parsed.get("severity", 0.5) or 0.5),
+                    "username": str(parsed.get("username", "")) or "",
+                    "process": str(parsed.get("process", "")) or "",
+                    "file": str(parsed.get("file", "")) or "",
+                    "privilege_level": str(parsed.get("privilege_level", "")) or "",
+                    "raw_log": raw_log,
+                    "_parser": "llm"
+                }
+                return result
+            else:
+                raise ValueError(f"No JSON found in LLM response: {llm_response[:200]}")
+                
+    except httpx.TimeoutException:
+        raise RuntimeError(f"LLM parsing timeout after {timeout}s")
+    except httpx.HTTPStatusError as e:
+        raise RuntimeError(f"LLM HTTP error: {e.response.status_code}")
+    except json.JSONDecodeError as e:
+        raise RuntimeError(f"Invalid JSON from LLM: {e}")
+
+
+async def parse_log_dynamic(raw_log: str, use_cache: bool = True) -> dict:
+    """
+    Universal log parser entry point. Orchestrates fast precheck + LLM parsing.
+    
+    Args:
+        raw_log: Raw log string in any format
+        use_cache: Whether to use/update the parse cache
+        
+    Returns:
+        Structured dict with normalized fields
+    """
+    global _llm_parse_cache
+    
+    cache_key = _cache_key(raw_log) if use_cache else None
+    
+    # Check cache first
+    if use_cache and cache_key in _llm_parse_cache:
+        cached = _llm_parse_cache[cache_key].copy()
+        cached["_cache_hit"] = True
+        return cached
+    
+    # Try fast precheck first (JSON, key=value, empty)
+    fast_result = fast_precheck(raw_log)
+    if fast_result is not None:
+        if use_cache and cache_key:
+            # Evict oldest if cache full
+            if len(_llm_parse_cache) >= _LLM_CACHE_MAX:
+                oldest_key = next(iter(_llm_parse_cache))
+                del _llm_parse_cache[oldest_key]
+            _llm_parse_cache[cache_key] = fast_result
+        return fast_result
+    
+    # Fall back to LLM parsing
+    llm_result = await llm_parse_log(raw_log)
+    
+    if use_cache and cache_key:
+        if len(_llm_parse_cache) >= _LLM_CACHE_MAX:
+            oldest_key = next(iter(_llm_parse_cache))
+            del _llm_parse_cache[oldest_key]
+        _llm_parse_cache[cache_key] = llm_result
+    
+    return llm_result
+
 # ── Lifespan (replaces deprecated on_event) ───────────────────────────────────
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -256,6 +537,210 @@ async def detect(alert: Alert):
     })
 
     return result
+
+# ── Raw Log Detection Endpoint (LLM-powered) ──────────────────────────────────
+from pydantic import BaseModel as PydanticBaseModel
+
+class RawLogRequest(PydanticBaseModel):
+    raw_log: str
+    use_cache: bool = True
+
+class RawLogResult(PydanticBaseModel):
+    alert_id: str
+    raw_log: str
+    parsed_fields: dict
+    parser_used: str
+    anomaly_score: float
+    is_anomalous: bool
+    detection_method: str
+    confidence: float
+    attack_type: str
+    source_ip: str
+    dest_ip: str
+
+@app.post("/detect_raw", response_model=RawLogResult)
+async def detect_raw(request: RawLogRequest):
+    """
+    Accept a raw log in ANY format and detect anomalies using LLM parsing.
+    
+    Supports: syslog, CEF, LEEF, JSON, Windows Event XML, netflow, 
+    Apache/Nginx access logs, firewall logs, IDS alerts, plain text, etc.
+    
+    The log is first run through fast_precheck (handles JSON, key=value, empty).
+    If not trivial, Ollama llama3.1:8b parses it dynamically.
+    """
+    import uuid
+    from datetime import datetime
+    
+    raw_log = request.raw_log
+    
+    # Parse the raw log using LLM-powered parser
+    try:
+        parsed = await parse_log_dynamic(raw_log, use_cache=request.use_cache)
+    except Exception as e:
+        raise HTTPException(500, f"Log parsing failed: {e}")
+    
+    parser_used = parsed.get("_parser", "unknown")
+    cache_hit = parsed.get("_cache_hit", False)
+    
+    # Generate alert ID
+    alert_id = str(uuid.uuid4())
+    timestamp = datetime.utcnow().isoformat()
+    
+    # Extract fields for detection
+    source_ip = parsed.get("source_ip", "0.0.0.0")
+    dest_ip = parsed.get("dest_ip", "0.0.0.0")
+    alert_type = parsed.get("alert_type", "unknown")
+    severity = parsed.get("severity", 0.5)
+    
+    # Check IOC list
+    ioc_type = state["redis"].is_ioc(source_ip)
+    
+    # Since we don't have numeric features from raw logs, use RoBERTa on raw text
+    # This is the key insight: RoBERTa can score raw log text directly
+    cicids_prob, embedding = _roberta_score(
+        state["cicids_rob"], state["cicids_tok"], raw_log[:512]  # Truncate to model max
+    )
+    
+    # Also score with UNSW RoBERTa for ensemble
+    unsw_prob, _ = _roberta_score(
+        state["unsw_rob"], state["unsw_tok"], raw_log[:512]
+    )
+    attack_prob = 0.6 * cicids_prob + 0.4 * unsw_prob
+    
+    # FAISS similarity check
+    faiss_anomalous, faiss_score = state["faiss"].is_anomalous(embedding)
+    
+    # IOC severity boost
+    if ioc_type:
+        attack_prob = min(1.0, attack_prob + 0.2)
+    
+    # LLM-parsed severity boost (if LLM says it's malicious)
+    if severity > 0.7 and parser_used == "llm":
+        attack_prob = min(1.0, attack_prob + 0.15)
+    
+    # Decision fusion
+    is_anomalous = attack_prob > 0.5 or faiss_anomalous
+    anomaly_score = float(np.clip(
+        max(attack_prob, float(faiss_anomalous) * 0.7, severity * 0.6),
+        0.0, 1.0
+    ))
+    
+    if faiss_anomalous and attack_prob > 0.5:
+        method = "llm+faiss+ensemble"
+    elif faiss_anomalous:
+        method = "llm+faiss"
+    else:
+        method = "llm+ensemble"
+    
+    if cache_hit:
+        method += "+cached"
+    
+    # Effective attack type
+    effective_attack_type = alert_type
+    if alert_type in ("unknown", "benign") and attack_prob > 0.5:
+        effective_attack_type = "Suspicious_Activity"
+    
+    result = RawLogResult(
+        alert_id=alert_id,
+        raw_log=raw_log[:500],  # Truncate for response
+        parsed_fields=parsed,
+        parser_used=parser_used,
+        anomaly_score=round(anomaly_score, 4),
+        is_anomalous=is_anomalous,
+        detection_method=method,
+        confidence=round(attack_prob, 4),
+        attack_type=effective_attack_type,
+        source_ip=source_ip,
+        dest_ip=dest_ip,
+    )
+    
+    # Cache in Redis
+    state["redis"].cache_anomaly(alert_id, {
+        "alert_id": alert_id,
+        "source_ip": source_ip,
+        "anomaly_score": anomaly_score,
+        "is_anomalous": is_anomalous,
+        "method": method,
+    })
+    state["redis"].cache_embedding(alert_id, embedding)
+    
+    # Publish if anomalous
+    if is_anomalous:
+        state["kafka"].send("anomaly_results", {
+            "alert_id": alert_id,
+            "timestamp": timestamp,
+            "source_ip": source_ip,
+            "dest_ip": dest_ip,
+            "attack_type": effective_attack_type,
+            "anomaly_score": anomaly_score,
+            "is_anomalous": is_anomalous,
+            "detection_method": method,
+            "raw_log": raw_log[:500],
+        }, key=alert_id)
+    
+    return result
+
+
+@app.post("/detect_raw/batch")
+async def detect_raw_batch(logs: list[str], use_cache: bool = True):
+    """
+    Batch process multiple raw logs concurrently with LLM parsing.
+    
+    Args:
+        logs: List of raw log strings (max 1000)
+        use_cache: Whether to use parse cache
+        
+    Returns:
+        List of detection results with throughput metrics
+    """
+    import time
+    
+    if not logs:
+        return {"total": 0, "results": [], "processing_time_ms": 0, "throughput": 0}
+    
+    logs = logs[:1000]  # Limit
+    n = len(logs)
+    start = time.perf_counter()
+    
+    # Process all logs concurrently
+    semaphore = asyncio.Semaphore(32)  # Limit concurrent LLM calls
+    
+    async def process_one(raw_log: str):
+        async with semaphore:
+            try:
+                req = RawLogRequest(raw_log=raw_log, use_cache=use_cache)
+                return await detect_raw(req)
+            except Exception as e:
+                return {"error": str(e), "raw_log": raw_log[:100]}
+    
+    tasks = [process_one(log) for log in logs]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+    
+    # Convert results
+    processed = []
+    for r in results:
+        if isinstance(r, Exception):
+            processed.append({"error": str(r)})
+        elif isinstance(r, RawLogResult):
+            processed.append(r.model_dump())
+        elif isinstance(r, dict):
+            processed.append(r)
+        else:
+            processed.append({"error": "unexpected result type"})
+    
+    elapsed_ms = (time.perf_counter() - start) * 1000
+    throughput = round(n / max(elapsed_ms / 1000, 0.001), 1)
+    
+    anomalous_count = sum(1 for r in processed if r.get("is_anomalous"))
+    
+    return {
+        "total": n,
+        "anomalous": anomalous_count,
+        "processing_time_ms": round(elapsed_ms, 2),
+        "throughput": throughput,
+        "results": processed,
+    }
 
 @app.post("/ingest")
 async def ingest(raw_event: dict):
