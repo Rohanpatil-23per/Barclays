@@ -411,15 +411,27 @@ document.getElementById('btn-run').addEventListener('click', async function() {
   catch(e){ res.textContent='Invalid JSON: '+e.message; res.className='result-box error'; return; }
 
   btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Running…';
-  res.className='result-box'; res.textContent='Simulating pipeline…';
+  res.className='result-box'; res.textContent='Calling backend API…';
 
-  await new Promise(r=>setTimeout(r,400+Math.random()*500));
-  const result = simulate(body);
-  res.textContent = JSON.stringify(result,null,2);
-  res.className='result-box success';
-  updatePipeline(result);
-  addFeedItem(result);
-  document.getElementById('throughput-pill').textContent = (1000/result.pipeline_duration_ms).toFixed(1)+' logs/s';
+  try {
+    // Convert JSON input to log string format
+    const logStr = Object.entries(body).map(([k,v])=>`${k}=${v}`).join(' ');
+    const apiRes = await fetch('http://localhost:8000/demo/inject', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({logs: logStr})
+    });
+    const result = await apiRes.json();
+    res.textContent = JSON.stringify(result,null,2);
+    res.className='result-box success';
+    updatePipeline(result);
+    addFeedItem(result);
+    const dur = result.pipeline_duration_ms || result.elapsed_ms || 100;
+    document.getElementById('throughput-pill').textContent = (1000/dur).toFixed(1)+' logs/s';
+  } catch(error) {
+    res.textContent = 'Error calling API: '+error.message;
+    res.className = 'result-box error';
+  }
 
   btn.disabled=false; btn.innerHTML='Run Pipeline';
 });
@@ -437,43 +449,56 @@ document.getElementById('btn-batch').addEventListener('click', async function() 
   const res = document.getElementById('batch-result');
 
   btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Processing…';
-  status.textContent='Simulating '+count+' logs…';
+  status.textContent='Processing '+count+' logs via API…';
   res.textContent='Processing…'; res.className='result-box';
 
-  await new Promise(r=>setTimeout(r,200));
-  const t0 = performance.now();
-  const sevs=['critical','high','medium','low'];
-  let anomalous=0, benign=0;
-  for(let i=0;i<count;i++){
-    const s=sevs[Math.floor(Math.random()*4)];
-    const sc=s==='critical'?jitter(.88):s==='high'?jitter(.72):s==='medium'?jitter(.42):jitter(.08);
-    if(sc>.5) anomalous++; else benign++;
+  try {
+    const t0 = performance.now();
+    // Generate sample logs for batch processing
+    const logs = [];
+    const attackTypes = ['PORT_SCAN', 'FAILED_AUTH', 'LATERAL_MOVE', 'DNS_EXFIL', 'NORMAL_TRAFFIC', 'DDOS_FLOOD', 'PRIV_ESC', 'OUTBOUND_CONN'];
+    for(let i=0; i<count; i++) {
+      const type = attackTypes[Math.floor(Math.random()*attackTypes.length)];
+      const srcIP = `10.0.1.${Math.floor(Math.random()*255)}`;
+      const dstIP = `10.0.0.${Math.floor(Math.random()*255)}`;
+      logs.push(`2026-04-06T${String(20+Math.floor(i/3600)).padStart(2,'0')}:${String(Math.floor((i%3600)/60)).padStart(2,'0')}:${String(i%60).padStart(2,'0')}Z ${type} src=${srcIP} dst=${dstIP} proto=TCP`);
+    }
+    
+    const apiRes = await fetch('http://localhost:8000/ingest/batch', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({logs: logs})
+    });
+    const d = await apiRes.json();
+    const elapsed = performance.now()-t0;
+    const throughput = d.throughput_logs_per_sec || (count/(elapsed/1000)).toFixed(1);
+
+    res.textContent=JSON.stringify(d,null,2); res.className='result-box success';
+
+    document.getElementById('batch-stats').style.display='grid';
+    document.getElementById('batch-ratio-wrap').style.display='block';
+    document.getElementById('bs-total').textContent=d.total_received || count;
+    document.getElementById('bs-anomalous').textContent=d.anomalous || 0;
+    document.getElementById('bs-benign').textContent=d.benign || 0;
+    document.getElementById('bs-throughput').textContent=throughput;
+    document.getElementById('bs-elapsed').textContent=(d.elapsed_ms || elapsed).toFixed(0)+'ms';
+
+    const anomalous = d.anomalous || 0;
+    const pct=((anomalous/count)*100).toFixed(1);
+    document.getElementById('ratio-fill').style.width=pct+'%';
+    document.getElementById('ratio-left').textContent=pct+'%';
+    document.getElementById('ratio-right').textContent=(100-pct).toFixed(1)+'%';
+    status.textContent='Done — '+throughput+' logs/sec';
+    document.getElementById('throughput-pill').textContent=throughput+' logs/s';
+    totalProcessed+=count; totalAnomalous+=anomalous;
+    document.getElementById('m-total').textContent=totalProcessed;
+    document.getElementById('m-anomalous').textContent=totalAnomalous;
+    document.getElementById('m-rate').textContent=((totalAnomalous/totalProcessed)*100).toFixed(1)+'% rate';
+  } catch(error) {
+    res.textContent = 'Error calling API: '+error.message;
+    res.className = 'result-box error';
+    status.textContent = 'Error: '+error.message;
   }
-  await new Promise(r=>setTimeout(r,150+count));
-  const elapsed = performance.now()-t0;
-  const throughput = (count/(elapsed/1000)).toFixed(1);
-
-  const d={total_received:count,anomalous,benign,throughput_logs_per_sec:+throughput,elapsed_ms:+elapsed.toFixed(0)};
-  res.textContent=JSON.stringify(d,null,2); res.className='result-box success';
-
-  document.getElementById('batch-stats').style.display='grid';
-  document.getElementById('batch-ratio-wrap').style.display='block';
-  document.getElementById('bs-total').textContent=count;
-  document.getElementById('bs-anomalous').textContent=anomalous;
-  document.getElementById('bs-benign').textContent=benign;
-  document.getElementById('bs-throughput').textContent=throughput;
-  document.getElementById('bs-elapsed').textContent=elapsed.toFixed(0)+'ms';
-
-  const pct=((anomalous/count)*100).toFixed(1);
-  document.getElementById('ratio-fill').style.width=pct+'%';
-  document.getElementById('ratio-left').textContent=pct+'%';
-  document.getElementById('ratio-right').textContent=(100-pct).toFixed(1)+'%';
-  status.textContent='Done — '+throughput+' logs/sec';
-  document.getElementById('throughput-pill').textContent=throughput+' logs/s';
-  totalProcessed+=count; totalAnomalous+=anomalous;
-  document.getElementById('m-total').textContent=totalProcessed;
-  document.getElementById('m-anomalous').textContent=totalAnomalous;
-  document.getElementById('m-rate').textContent=((totalAnomalous/totalProcessed)*100).toFixed(1)+'% rate';
 
   btn.disabled=false; btn.innerHTML='Send Batch';
 });

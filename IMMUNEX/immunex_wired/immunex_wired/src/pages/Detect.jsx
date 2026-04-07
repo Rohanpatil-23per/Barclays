@@ -164,11 +164,11 @@ export default function Detect({ onPipelineResult }) {
         try {
           result = await runFullPipelineFrontend(alert);
         } catch {
-          result = await runDemoInjection({});
+          result = await runDemoInjection({ logs: representativeLine });
         }
       } else {
         try {
-          result = await runDemoInjection({});
+          result = await runDemoInjection({ logs: representativeLine });
         } catch {
           try { result = await runPipeline(alert); }
           catch { result = await runFullPipelineFrontend(alert); }

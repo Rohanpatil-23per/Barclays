@@ -126,7 +126,21 @@ export async function getLayerHealthStats() {
 
 export const getMeshNodes     = () => apiFetch(`${ORCHESTRATOR}/ingest/nodes`, {}, 5000);
 export const runPipeline      = (log) => apiFetch(`${ORCHESTRATOR}/pipeline/run`, { method: 'POST', body: JSON.stringify({ log }) });
-export const runDemoInjection = (payload) => apiFetch(`${ORCHESTRATOR}/demo/inject`, { method: 'POST', body: JSON.stringify(payload) });
+export const runDemoInjection = (payload) => {
+  // Ensure we send logs in the correct format
+  let logsToSend = payload.logs || payload.text || payload.message || '';
+  if (!logsToSend && typeof payload === 'object') {
+    // Convert object to log string format
+    logsToSend = Object.entries(payload)
+      .filter(([k,v]) => v && k !== 'features')
+      .map(([k,v]) => `${k}=${v}`)
+      .join(' ');
+  }
+  return apiFetch(`${ORCHESTRATOR}/demo/inject`, { 
+    method: 'POST', 
+    body: JSON.stringify({ logs: logsToSend })
+  });
+};
 export const runBatchIngest   = (logs, batch_size = 32) =>
   apiFetch(`${ORCHESTRATOR}/ingest/batch`, { method: 'POST', body: JSON.stringify({ logs, batch_size }) }, 60000);
 
@@ -162,7 +176,12 @@ export async function explainThreat(payload) {
 export const retrainLayer4 = (payload) => apiFetch(`${LAYER4}/retrain`, { method: 'POST', body: JSON.stringify(payload) });
 
 export async function runFullPipelineFrontend(alert) {
-  return apiFetch(`${ORCHESTRATOR}/demo/inject`, { method: 'POST', body: '{}' });
+  // Convert alert to log string format for demo/inject endpoint
+  const logStr = alert.text || alert.message || JSON.stringify(alert);
+  return apiFetch(`${ORCHESTRATOR}/demo/inject`, { 
+    method: 'POST', 
+    body: JSON.stringify({ logs: logStr })
+  });
 }
 
 export function buildAlertFromLog(logText, sourceIp = '0.0.0.0') {

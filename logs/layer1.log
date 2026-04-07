@@ -1,30 +1,51 @@
-INFO:     Started server process [50506]
+INFO:     Started server process [325527]
 INFO:     Waiting for application startup.
 Loading models on cuda...
-Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 14129.81it/s]
-Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 16981.33it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights:  17%|█▋        | 35/201 [00:00<00:00, 330.50it/s]Loading weights:  56%|█████▌    | 113/201 [00:00<00:00, 568.46it/s]Loading weights:  85%|████████▍ | 170/201 [00:00<00:00, 513.32it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 594.28it/s]
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights:  16%|█▌        | 32/201 [00:00<00:00, 305.86it/s]Loading weights:  43%|████▎     | 87/201 [00:00<00:00, 436.47it/s]Loading weights:  72%|███████▏  | 144/201 [00:00<00:00, 494.29it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 527.11it/s]
 Could not create index immunex_alerts: Connection error caused by: ConnectionError(Connection error caused by: ProtocolError(('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer'))))
 Could not create index immunex_incidents: Connection error caused by: ConnectionError(Connection error caused by: ProtocolError(('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer'))))
 Could not create index immunex_playbooks: Connection error caused by: ConnectionError(Connection error caused by: ProtocolError(('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer'))))
 INFO:     Application startup complete.
 INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
 All models loaded ✅
-  CICIDS RoBERTa: models/roberta_layer1
-  UNSW RoBERTa:   models/roberta_unsw
+  CICIDS RoBERTa: /home/aditya/Documents/hoh/Barclays/models/roberta_layer1
+  UNSW RoBERTa:   /home/aditya/Documents/hoh/Barclays/models/roberta_unsw
   Isolation Forest: loaded
   FAISS GPU index: 20030 vectors
   Kafka/Redis/ES:  connected
-INFO:     127.0.0.1:60560 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:57326 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:57342 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:57342 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:44912 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:38636 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:38652 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:38656 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47816 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46744 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46756 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46756 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46756 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35352 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35352 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35352 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35354 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35362 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35362 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35364 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35352 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35686 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45286 - "GET /health HTTP/1.1" 200 OK
 /home/aditya/.venvs/immunex/lib64/python3.11/site-packages/sklearn/utils/validation.py:2691: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
   warnings.warn(
-INFO:     127.0.0.1:55766 - "POST /detect HTTP/1.1" 500 Internal Server Error
+[Parallel(n_jobs=1)]: Done  49 tasks      | elapsed:    0.0s
+[Parallel(n_jobs=1)]: Done 199 tasks      | elapsed:    0.0s
+[Parallel(n_jobs=1)]: Done 200 out of 200 | elapsed:    0.0s finished
+/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/sklearn/utils/validation.py:2691: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+INFO:     127.0.0.1:45286 - "POST /detect HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59556 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59558 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39606 - "GET /health HTTP/1.1" 200 OK
+/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/sklearn/utils/validation.py:2691: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
+  warnings.warn(
+[Parallel(n_jobs=1)]: Done  49 tasks      | elapsed:    0.0s
+[Parallel(n_jobs=1)]: Done 199 tasks      | elapsed:    0.0s
+[Parallel(n_jobs=1)]: Done 200 out of 200 | elapsed:    0.0s finished
+INFO:     127.0.0.1:39620 - "POST /detect HTTP/1.1" 500 Internal Server Error
 ERROR:    Exception in ASGI application
 Traceback (most recent call last):
   File "/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/uvicorn/protocols/http/h11_impl.py", line 410, in run_asgi
@@ -72,61 +93,13 @@ Traceback (most recent call last):
   File "/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/fastapi/routing.py", line 324, in run_endpoint_function
     return await dependant.call(**values)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/aditya/Documents/hoh/Barclays/layer1_detection/server.py", line 146, in detect
-    scaled    = state["cicids_scaler"].transform(features)
-                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/sklearn/utils/_set_output.py", line 316, in wrapped
-    data_to_wrap = f(self, X, *args, **kwargs)
-                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/sklearn/preprocessing/_data.py", line 1094, in transform
-    X = validate_data(
-        ^^^^^^^^^^^^^^
-  File "/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/sklearn/utils/validation.py", line 2923, in validate_data
-    _check_n_features(_estimator, X, reset=reset)
-  File "/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/sklearn/utils/validation.py", line 2787, in _check_n_features
-    raise ValueError(
-ValueError: X has 1 features, but StandardScaler is expecting 77 features as input.
-Error processing alert: 1 validation error for Alert
-severity
-  Input should be a valid string [type=string_type, input_value=0.5, input_type=float]
-    For further information visit https://errors.pydantic.dev/2.12/v/string_type
-Error processing alert: 1 validation error for Alert
-severity
-  Input should be a valid string [type=string_type, input_value=0.5, input_type=float]
-    For further information visit https://errors.pydantic.dev/2.12/v/string_type
-Error processing alert: 1 validation error for Alert
-severity
-  Input should be a valid string [type=string_type, input_value=0.5, input_type=float]
-    For further information visit https://errors.pydantic.dev/2.12/v/string_type
-Error processing alert: 1 validation error for Alert
-severity
-  Input should be a valid string [type=string_type, input_value=0.5, input_type=float]
-    For further information visit https://errors.pydantic.dev/2.12/v/string_type
-Error processing alert: 1 validation error for Alert
-severity
-  Input should be a valid string [type=string_type, input_value=0.5, input_type=float]
-    For further information visit https://errors.pydantic.dev/2.12/v/string_type
-Error processing alert: 1 validation error for Alert
-severity
-  Input should be a valid string [type=string_type, input_value=0.5, input_type=float]
-    For further information visit https://errors.pydantic.dev/2.12/v/string_type
-Error processing alert: 1 validation error for Alert
-severity
-  Input should be a valid string [type=string_type, input_value=0.5, input_type=float]
-    For further information visit https://errors.pydantic.dev/2.12/v/string_type
-Error processing alert: 1 validation error for Alert
-severity
-  Input should be a valid string [type=string_type, input_value=0.5, input_type=float]
-    For further information visit https://errors.pydantic.dev/2.12/v/string_type
-Error processing alert: 1 validation error for Alert
-severity
-  Input should be a valid string [type=string_type, input_value=0.5, input_type=float]
-    For further information visit https://errors.pydantic.dev/2.12/v/string_type
-Error processing alert: 1 validation error for Alert
-severity
-  Input should be a valid string [type=string_type, input_value=0.5, input_type=float]
-    For further information visit https://errors.pydantic.dev/2.12/v/string_type
-INFO:     127.0.0.1:55772 - "POST /ingest/batch HTTP/1.1" 200 OK
+  File "/home/aditya/Documents/hoh/Barclays/layer1_detection/server.py", line 478, in detect
+    cicids_text          = serialize_features(alert.features, state["cicids_feats"])
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/aditya/Documents/hoh/Barclays/layer1_detection/inference_utils.py", line 14, in serialize_features
+    if i < len(features):
+           ^^^^^^^^^^^^^
+TypeError: object of type 'NoneType' has no len()
 /home/aditya/.venvs/immunex/lib64/python3.11/site-packages/sklearn/utils/validation.py:2691: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
   warnings.warn(
 [Parallel(n_jobs=1)]: Done  49 tasks      | elapsed:    0.0s
@@ -134,20 +107,7 @@ INFO:     127.0.0.1:55772 - "POST /ingest/batch HTTP/1.1" 200 OK
 [Parallel(n_jobs=1)]: Done 200 out of 200 | elapsed:    0.0s finished
 /home/aditya/.venvs/immunex/lib64/python3.11/site-packages/sklearn/utils/validation.py:2691: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
   warnings.warn(
-INFO:     127.0.0.1:55788 - "POST /detect HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55788 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52074 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:46326 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52444 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:40906 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:40922 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:40922 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:40922 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:40934 - "OPTIONS /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:40934 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:40922 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:40934 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:34126 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39626 - "POST /detect HTTP/1.1" 200 OK
 /home/aditya/.venvs/immunex/lib64/python3.11/site-packages/sklearn/utils/validation.py:2691: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
   warnings.warn(
 [Parallel(n_jobs=1)]: Done  49 tasks      | elapsed:    0.0s
@@ -155,9 +115,7 @@ INFO:     127.0.0.1:34126 - "GET /health HTTP/1.1" 200 OK
 [Parallel(n_jobs=1)]: Done 200 out of 200 | elapsed:    0.0s finished
 /home/aditya/.venvs/immunex/lib64/python3.11/site-packages/sklearn/utils/validation.py:2691: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
   warnings.warn(
-INFO:     127.0.0.1:52024 - "POST /detect HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52024 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:34182 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39626 - "POST /detect HTTP/1.1" 200 OK
 /home/aditya/.venvs/immunex/lib64/python3.11/site-packages/sklearn/utils/validation.py:2691: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
   warnings.warn(
 [Parallel(n_jobs=1)]: Done  49 tasks      | elapsed:    0.0s
@@ -165,54 +123,478 @@ INFO:     127.0.0.1:34182 - "GET /health HTTP/1.1" 200 OK
 [Parallel(n_jobs=1)]: Done 200 out of 200 | elapsed:    0.0s finished
 /home/aditya/.venvs/immunex/lib64/python3.11/site-packages/sklearn/utils/validation.py:2691: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
   warnings.warn(
-INFO:     127.0.0.1:52024 - "POST /detect HTTP/1.1" 200 OK
-/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/sklearn/utils/validation.py:2691: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
-  warnings.warn(
-[Parallel(n_jobs=1)]: Done  49 tasks      | elapsed:    0.0s
-[Parallel(n_jobs=1)]: Done 199 tasks      | elapsed:    0.0s
-[Parallel(n_jobs=1)]: Done 200 out of 200 | elapsed:    0.0s finished
-/home/aditya/.venvs/immunex/lib64/python3.11/site-packages/sklearn/utils/validation.py:2691: UserWarning: X does not have valid feature names, but StandardScaler was fitted with feature names
-  warnings.warn(
-INFO:     127.0.0.1:34196 - "POST /detect HTTP/1.1" 200 OK
-INFO:     127.0.0.1:48012 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:36726 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:38046 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:36010 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:56854 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:33634 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:33646 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:35278 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55108 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:49636 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:38208 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:51246 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:57016 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:57032 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:58698 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:58708 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:45774 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:51942 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:34350 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:47666 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:39788 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:43564 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:43572 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:38984 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:42538 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:56690 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:57080 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:46450 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:42132 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:42136 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:48740 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:48748 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:48740 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:48764 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:48764 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:48748 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:36086 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55894 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55910 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55918 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55932 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:53946 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39838 - "POST /detect HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39844 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57392 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57408 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40196 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49010 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49022 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34740 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45672 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45680 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48328 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47638 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:44102 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:44116 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52578 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59878 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59888 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53128 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35262 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35266 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48444 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40078 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39756 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39760 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51102 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52646 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52656 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59484 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38780 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38794 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35294 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43606 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43618 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59596 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55466 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37092 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37100 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51686 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59448 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59462 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54828 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60310 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60326 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48338 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54822 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38918 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38928 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43264 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47786 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47802 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37644 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59252 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59256 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47366 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41242 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40400 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40416 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50412 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60054 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60060 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36256 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50238 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50254 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50254 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43454 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43464 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58716 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58716 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38142 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38152 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60736 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60736 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49670 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60014 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37150 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37164 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37164 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33626 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49090 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49094 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49094 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60192 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60206 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58548 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58548 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45228 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36740 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43916 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42196 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43916 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35240 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38342 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38356 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38356 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49788 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49804 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53888 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53888 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39892 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59876 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41404 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48950 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41404 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52946 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41670 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41686 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41686 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42274 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42288 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49444 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49444 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50218 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50232 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42730 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46208 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46224 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:44420 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49556 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49564 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47360 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34278 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35148 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35154 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36226 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34646 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34656 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58946 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58954 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58966 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48970 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35818 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33164 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33174 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38512 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53586 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57912 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57918 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58130 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58140 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40014 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41306 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55318 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34096 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:44086 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42158 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50104 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57576 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:44316 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37030 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40202 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39646 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42324 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55088 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46166 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34088 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38040 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57346 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37646 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49298 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57380 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56810 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36088 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49868 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34086 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34006 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55074 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59798 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49766 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35224 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58742 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55474 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51152 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41006 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35756 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43660 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35692 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36274 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45216 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57126 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40886 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51116 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54518 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51586 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57740 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58296 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41330 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39518 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35094 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60238 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53114 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59678 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43810 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43300 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46542 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43774 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60752 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56190 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:44958 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36498 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39286 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34234 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32896 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53700 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55102 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34194 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48840 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59616 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52908 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45510 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43544 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41264 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38958 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41656 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57352 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52550 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36866 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60614 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56406 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43544 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38560 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48106 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43636 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38492 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52194 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58528 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58956 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34870 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37000 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40910 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60256 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46966 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52718 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38450 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38930 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37758 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55264 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47182 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52128 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46336 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48266 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50582 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60520 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47096 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42914 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:44896 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42046 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51318 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34918 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48946 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52094 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42404 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48544 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38284 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51550 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33486 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46020 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33660 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53068 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42098 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34122 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55768 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42236 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42594 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38542 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42868 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50112 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43998 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33752 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54536 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54896 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54334 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40296 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33992 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42622 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36824 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33022 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33766 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42556 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47292 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54256 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42706 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35376 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51840 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59258 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34512 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56798 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34758 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39524 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38068 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55552 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33770 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39614 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36564 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55466 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49252 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52450 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49758 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41822 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:44482 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41744 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:44494 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35090 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55466 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52066 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36272 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49102 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59654 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36518 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34414 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33206 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38166 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39644 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36124 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60540 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57972 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45690 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56138 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50582 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54912 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41556 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43108 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46314 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33770 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37020 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56474 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57772 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32828 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57194 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39040 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38784 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50686 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51264 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38808 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39740 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36592 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46370 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48688 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57004 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49950 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35944 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39126 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52348 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59844 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54164 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53566 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52276 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52606 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39598 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48798 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48344 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48408 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52250 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34496 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37656 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57290 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50242 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54648 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48698 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48558 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40270 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56576 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49672 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55668 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51910 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41032 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52570 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52152 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52680 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39306 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47792 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39364 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43352 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56624 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47032 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60678 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45824 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54432 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52170 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52928 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60984 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41464 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49702 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:44478 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36532 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51796 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46852 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39914 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55754 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42324 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47656 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34610 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54508 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35558 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51186 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45064 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43794 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47700 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35024 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55722 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50134 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53764 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47428 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45316 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57254 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59352 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50404 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33526 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57902 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35498 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37408 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37374 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52032 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45182 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43574 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58294 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46004 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39690 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60796 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50364 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50886 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40234 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50338 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60274 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50786 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41826 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51630 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57344 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52620 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39538 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53736 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45484 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48226 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48056 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34906 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41104 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57620 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32886 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36198 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34044 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:44542 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52716 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36194 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60410 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49940 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59994 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36936 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55770 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45316 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50412 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41134 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36662 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51756 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47632 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40772 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:41280 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38976 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60486 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34806 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42274 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58120 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43586 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37092 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48456 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45248 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47174 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52056 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46612 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39532 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58306 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38264 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49608 - "GET /health HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [325527]
