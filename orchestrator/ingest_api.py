@@ -48,11 +48,11 @@ L1_NODES = [
     os.getenv("L1_NODE_3", "http://10.0.0.3:8001"),         # Lenovo LOQ 3050
     os.getenv("L1_NODE_4", "http://10.0.0.4:8001"),         # HP Victus 2050
     os.getenv("L1_NODE_5", "http://10.0.0.5:8001"),         # HP Pavilion 1650
+>>>>>>> 1afdabc8a46d5f181a3da2a175a1925bab46be4f
 ]
 
 # Track which nodes are alive (updated by health checker)
 _node_alive: dict[str, bool] = {url: ("localhost" in url or "127.0.0.1" in url) for url in L1_NODES}
-_node_device: dict[str, str] = {url: "unknown" for url in L1_NODES}
 _node_latency: dict[str, float] = {url: 0.0 for url in L1_NODES}
 
 # Global semaphore: prevent GPU OOM across all concurrent requests

@@ -88,6 +88,49 @@ CREATE INDEX IF NOT EXISTS idx_rejected_demos_vector
     WITH (lists = 100);
 """
 
+<<<<<<< HEAD
+# ── Incident Memory table — core adaptive memory store ──────────────────────
+
+# Stores both vectors for every accepted/auto-executed incident so the system
+# can:
+#   1. Re-use God-Mode 128D vectors for DQN RLHF fine-tuning.
+#   2. Feed RoBERTa 768D vectors back to Layer 1 FAISS attack index.
+_SQL_INCIDENT_MEMORY_TABLE = """
+CREATE TABLE IF NOT EXISTS incident_memory (
+    id                BIGSERIAL    PRIMARY KEY,
+    alert_id          TEXT         NOT NULL,
+    source_ip         TEXT,
+    attack_type       TEXT,
+    mitre_stage       TEXT,
+    predicted_next    TEXT,
+    severity          FLOAT,
+    god_mode_128d     vector(128)  NOT NULL,
+    roberta_768d      vector(768)  NOT NULL,
+    playbook_text     TEXT,
+    action_taken      TEXT[],
+    was_overridden    BOOLEAN      DEFAULT FALSE,
+    override_actions  TEXT[],
+    accepted_by       TEXT         DEFAULT 'system',
+    timestamp         TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+);
+"""
+
+_SQL_INCIDENT_128D_INDEX = """
+CREATE INDEX IF NOT EXISTS idx_incident_memory_128d
+    ON incident_memory
+    USING ivfflat (god_mode_128d vector_cosine_ops)
+    WITH (lists = 50);
+"""
+
+_SQL_INCIDENT_768D_INDEX = """
+CREATE INDEX IF NOT EXISTS idx_incident_memory_768d
+    ON incident_memory
+    USING ivfflat (roberta_768d vector_cosine_ops)
+    WITH (lists = 100);
+"""
+
+=======
+>>>>>>> 2b0972f24f02f6df454050c626cf8a1556f12d69
 
 # ── Pool lifecycle ──────────────────────────────────────────────────────────
 
@@ -130,11 +173,29 @@ async def init_pool() -> None:
         logger.info("asyncpg_pool_created", dsn=_DATABASE_URL.split("@")[-1])
 
         async with _pool.acquire() as conn:
+<<<<<<< HEAD
+            # [IMMUNEX-PATCH] Execute DDL in order: extension → tables → indexes
+=======
             # [IMMUNEX-PATCH] Execute DDL in order: extension → tables → index
+>>>>>>> 2b0972f24f02f6df454050c626cf8a1556f12d69
             await conn.execute(_SQL_ENABLE_VECTOR)
             await conn.execute(_SQL_EXPERT_TABLE)
             await conn.execute(_SQL_REJECTED_TABLE)
             await conn.execute(_SQL_REJECTED_INDEX)
+<<<<<<< HEAD
+            await conn.execute(_SQL_INCIDENT_MEMORY_TABLE)
+            # Indexes on incident_memory — created separately so creation is
+            # idempotent even if the table already has rows.
+            try:
+                await conn.execute(_SQL_INCIDENT_128D_INDEX)
+            except Exception:
+                pass  # Index may fail if < 50 rows; will be recreated on restart
+            try:
+                await conn.execute(_SQL_INCIDENT_768D_INDEX)
+            except Exception:
+                pass
+=======
+>>>>>>> 2b0972f24f02f6df454050c626cf8a1556f12d69
 
         logger.info("database_schema_initialised")
 
@@ -330,3 +391,92 @@ async def is_action_rejected(
             error=str(exc),
         )
         return False  # [IMMUNEX-PATCH] Fail open — don't block on DB errors
+<<<<<<< HEAD
+
+
+# ── Incident Memory write helper ────────────────────────────────────────────
+
+async def insert_incident_memory(
+    alert_id:         str,
+    source_ip:        str,
+    attack_type:      str,
+    mitre_stage:      str,
+    predicted_next:   str,
+    severity:         float,
+    god_mode_128d:    list[float],    # 128D Layer 2 God-Mode vector
+    roberta_768d:     list[float],    # 768D Layer 1 RoBERTa embedding
+    playbook_text:    str       = "",
+    action_taken:     list[str] = None,
+    was_overridden:   bool      = False,
+    override_actions: list[str] = None,
+    accepted_by:      str       = "system",
+) -> None:
+    """
+    Persists a confirmed incident's dual-vector footprint into incident_memory.
+
+    Called by:
+      - POST /approve  — when a human approves (or overrides) a playbook
+      - /respond auto-execute path — for low-risk auto-approved actions
+
+    god_mode_128d is used for DQN RLHF fine-tuning.
+    roberta_768d  is fed back to Layer 1 FAISS attack index for adaptive detection.
+
+    Degrades gracefully — if pool is None, logs a warning and returns.
+    """
+    pool = get_pool()
+    if pool is None:
+        logger.warning(
+            "incident_memory_insert_skipped",
+            alert_id=alert_id,
+            reason="No database pool",
+        )
+        return
+
+    # Validate dimensions before storing
+    if len(god_mode_128d) != 128:
+        god_mode_128d = (god_mode_128d + [0.0] * 128)[:128]
+    if len(roberta_768d) != 768:
+        roberta_768d = (roberta_768d + [0.0] * 768)[:768]
+
+    try:
+        async with pool.acquire() as conn:
+            await conn.execute(
+                """
+                INSERT INTO incident_memory (
+                    alert_id, source_ip, attack_type, mitre_stage, predicted_next,
+                    severity, god_mode_128d, roberta_768d, playbook_text,
+                    action_taken, was_overridden, override_actions, accepted_by
+                )
+                VALUES ($1, $2, $3, $4, $5, $6,
+                        $7::vector, $8::vector,
+                        $9, $10, $11, $12, $13)
+                """,
+                alert_id,
+                source_ip,
+                attack_type,
+                mitre_stage,
+                predicted_next,
+                severity,
+                str(god_mode_128d),           # pgvector text cast
+                str(roberta_768d),            # pgvector text cast
+                playbook_text,
+                action_taken or [],
+                was_overridden,
+                override_actions or [],
+                accepted_by,
+            )
+        logger.info(
+            "incident_memory_inserted",
+            alert_id=alert_id,
+            attack_type=attack_type,
+            mitre_stage=mitre_stage,
+            was_overridden=was_overridden,
+        )
+    except Exception as exc:
+        logger.error(
+            "incident_memory_insert_failed",
+            alert_id=alert_id,
+            error=str(exc),
+        )
+=======
+>>>>>>> 2b0972f24f02f6df454050c626cf8a1556f12d69

@@ -1,0 +1,77 @@
+﻿
+======================================================================
+AUDIT 1: DATASET AUTHENTICITY & INTEGRITY
+======================================================================
+  [OK] [PASS] Dataset file exists -- data\l2_seq_dataset.pt
+  [OK] [PASS] Features shape is (N, 50, 77) -- torch.Size([5998, 50, 77])
+  [OK] [PASS] Node labels shape is (N, 50) -- torch.Size([5998, 50])
+  [OK] [PASS] Stages shape is (N,) -- torch.Size([5998])
+  [OK] [PASS] Severity shape is (N, 1) -- torch.Size([5998, 1])
+  [OK] [PASS] NOT synthetic: Feature mean != ~0.5 (uniform random) -- mean=0.0608, std=0.2023
+  [OK] [PASS] NOT synthetic: Feature col 0 has realistic distribution -- unique_vals_col0=3 out of 299900
+  [OK] [PASS] NOT synthetic: Label distribution is skewed (real-world imbalance) -- Benign=0.3%, Counts=[750, 299150, 0, 0]
+  [OK] [PASS] Stage labels cover all 5 MITRE stages (0-4) -- min=0, max=1, dist=[15, 5983, 0, 0, 0]
+  [OK] [PASS] Severity values are in [0, 1] -- min=0.0000, max=1.0000
+  [OK] [PASS] Source CSV exists (CICIDS2018/02-14-2018.csv) -- size=342MB
+
+======================================================================
+AUDIT 2: TRANSFORMER WEIGHTS VERIFICATION
+======================================================================
+  [OK] [PASS] Transformer weight file exists -- models\transformer\immunex_transformer_godmode.pt
+  [OK] [PASS] Transformer weight file > 1MB (not empty stub) -- 3.30 MB
+  [OK] [PASS] Transformer loads without error
+  [OK] [PASS] Transformer weights are non-trivial (trained, not random init) -- avg |param|=0.1639
+  [OK] [PASS] Transformer Node output shape is (B, 50, 4) -- torch.Size([2, 50, 4])
+  [OK] [PASS] Transformer Severity output shape is (B, 1) -- torch.Size([2, 1])
+  [OK] [PASS] Transformer Spatial Vector output shape is (B, 118) -- torch.Size([2, 118])
+  [OK] [PASS] Severity output is in [0, 1] (Sigmoid applied) -- min=0.9794, max=0.9798
+  [OK] [PASS] Attention weights list has 4 layers -- got 4 layers
+  [OK] [PASS] Attention shape per layer is (B, 51, 51) (50 alerts + CLS) -- torch.Size([2, 51, 51])
+  [OK] [PASS] AttentionPenaltyLoss produces valid gradient signal -- penalty=0.000000
+
+======================================================================
+AUDIT 3: BiLSTM WEIGHTS VERIFICATION
+======================================================================
+  [OK] [PASS] BiLSTM weight file exists -- models\bilstm\immunex_bilstm_godmode.pt
+  [OK] [PASS] BiLSTM weight file > 100KB (not empty stub) -- 2605.5 KB
+  [OK] [PASS] BiLSTM loads without error
+  [OK] [PASS] BiLSTM output shape is (B, 5) ù 5 MITRE stages -- torch.Size([2, 5])
+  [OK] [PASS] BiLSTM output sums to ~1.0 (valid softmax probability) -- sum=1.000000
+  [OK] [PASS] BiLSTM output values are all >= 0 (valid probabilities) -- min=0.000001
+
+======================================================================
+AUDIT 4: HMM PREDICTIVE ENGINE VERIFICATION
+======================================================================
+  [OK] [PASS] HMM transition matrix is 5x5 -- (5, 5)
+  [OK] [PASS] HMM transition rows sum to 1.0 (valid stochastic matrix) -- row_sums=[1.0, 1.0, 1.0, 1.0, 1.0]
+  [OK] [PASS] HMM: Recon->next predicts mostly Initial Access -- future_probs=[0.1, 0.8, 0.05, 0.05, 0.0]
+  [OK] [PASS] HMM: Lateral->next predicts mostly Exfiltration -- future_probs=[0.0, 0.0, 0.05, 0.15, 0.8]
+  [OK] [PASS] HMM output sums to ~1.0 (valid probability) -- sum=1.000000
+
+======================================================================
+AUDIT 5: 128D GOD-MODE VECTOR FUSION
+======================================================================
+  [OK] [PASS] Spatial vector dimension is 118 -- (118,)
+  [OK] [PASS] Current stage vector dimension is 5 -- (5,)
+  [OK] [PASS] Future stage vector dimension is 5 -- (5,)
+  [OK] [PASS] GOD-MODE VECTOR IS EXACTLY 128 DIMENSIONS -- shape=(128,)
+  [OK] [PASS] 128D vector segment [0:118] is from Transformer Spatial
+  [OK] [PASS] 128D vector segment [118:123] is from BiLSTM Current State
+  [OK] [PASS] 128D vector segment [123:128] is from HMM Future State
+
+======================================================================
+AUDIT 6: PRIORITY QUEUE DISPATCH ORDERING
+======================================================================
+  [OK] [PASS] Highest severity IP dispatched first -- first=('192.168.5.5', 0.95)
+  [OK] [PASS] Lowest severity IP dispatched last -- last=('10.0.0.99', 0.15)
+  [OK] [PASS] Dispatch order is strictly descending by severity -- order=[0.95, 0.92, 0.78, 0.35, 0.15]
+
+======================================================================
+FINAL AUDIT SUMMARY
+======================================================================
+
+  Total Checks: 43
+  PASSED: 43
+  FAILED: 0
+
+  VERDICT: ALL SYSTEMS NOMINAL

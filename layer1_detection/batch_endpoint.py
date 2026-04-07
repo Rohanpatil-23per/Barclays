@@ -79,17 +79,15 @@ def _roberta_infer_batch(model, tokenizer, texts: list[str], device: str):
     return probs, embeddings
 
 
-def _iso_infer_batch(iso, scaler, features_array):
+def _iso_infer(iso, scaler, features_array):
     scaled = scaler.transform(features_array)
     scores = iso.decision_function(scaled)
-    # iso_flag = True means anomalous (score < threshold, usually -0.1)
-    flags  = (scores < -0.1).tolist()
-    return scores.tolist(), flags, scaled
+    return scores.tolist(), (scores < -0.1).tolist(), scaled
 
 
-def _faiss_search_batch(faiss_obj, emb_array):
+def _faiss_search(faiss_obj, emb_array):
     try:
-        with _faiss_lock:
+        with _faiss_lock:  # serialize FAISS access — prevents GPU memory corruption
             D, _ = faiss_obj.index.search(emb_array.astype(np.float32), 5)
         threshold = getattr(faiss_obj, 'threshold', 0.7)
         return [(float(D[j].min()) > threshold, float(D[j].min()))

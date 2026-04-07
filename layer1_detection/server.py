@@ -535,6 +535,7 @@ async def detect(alert: Alert):
         anomaly_score    = anomaly_score,
         is_anomalous     = is_anomalous,
         embedding        = embedding,
+        roberta_embedding = embedding,   # 768D RoBERTa CLS — explicit field for L2→L3 carry-through
         detection_method = method,
         confidence       = attack_prob,
         cicids_features  = cicids_features_77,  # FIX 6: 77 features for L4

@@ -42,8 +42,8 @@ from torch.utils.data import DataLoader, TensorDataset
 from sklearn.metrics import accuracy_score, classification_report
 
 # ─── Paths ────────────────────────────────────────────────────────────────────
-BASE_DIR    = r"E:\immunex_p4\layer4_immunity"
-DATA_DIR    = r"E:\immunex_p4\person4_layer4"
+BASE_DIR    = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR    = BASE_DIR
 MODEL_DIR   = os.path.join(BASE_DIR, "models")
 LOG_DIR     = os.path.join(BASE_DIR, "logs")
 TRAIN_CSV   = os.path.join(DATA_DIR, "lora_retrain_source.csv")

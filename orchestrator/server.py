@@ -62,6 +62,24 @@ LAYER_URLS = {
         os.getenv("LAYER2_URL",    "http://10.0.0.2:8002"),   # Acer Nitro 4050
         os.getenv("LAYER2_FB1",    "http://10.0.0.3:8002"),   # Lenovo LOQ 3050
         os.getenv("LAYER2_FB2",    "http://10.0.0.4:8002"),   # HP Victus 2050
+======
+        os.getenv("LAYER2_URL",    "http://10.0.0.2:8002"),   # Acer Nitro 4050
+        os.getenv("LAYER2_FB1",    "http://10.0.0.3:8002"),   # Lenovo LOQ 3050
+        os.getenv("LAYER2_FB2",    "http://10.0.0.4:8002"),   # HP Victus 2050
+        os.getenv("LAYER2_FB3",    "http://localhost:8002"),   # your machine last
+    ],
+    3: [
+        os.getenv("LAYER3_URL",    "http://10.0.0.3:8003"),   # Lenovo LOQ 3050
+        os.getenv("LAYER3_FB1",    "http://10.0.0.2:8003"),   # Acer Nitro 4050
+        os.getenv("LAYER3_FB2",    "http://10.0.0.4:8003"),   # HP Victus 2050
+        os.getenv("LAYER3_FB3",    "http://localhost:8003"),
+    ],
+    4: [
+        os.getenv("LAYER4_URL",    "http://10.0.0.4:8004"),   # HP Victus 2050
+        os.getenv("LAYER4_FB1",    "http://10.0.0.5:8004"),   # HP Pavilion 1650
+        os.getenv("LAYER4_FB2",    "http://10.0.0.2:8004"),   # Acer Nitro 4050
+        os.getenv("LAYER4_FB3",    "http://localhost:8004"),
+    ],
         os.getenv("LAYER2_FB3",    "http://localhost:8002"),   # your machine last
     ],
     3: [
@@ -82,6 +100,7 @@ LAYER_URLS = {
         os.getenv("LAYER5_FB2",    "http://10.0.0.2:8005"),   # Acer Nitro 4050
         os.getenv("LAYER5_FB3",    "http://localhost:8005"),
     ],
+>>>>>>> 2b0972f24f02f6df454050c626cf8a1556f12d69
 }
 
 # ── FIX 9: Production configuration ───────────────────────────────────────────
@@ -482,13 +501,15 @@ async def run_pipeline(alert: Alert):
 
     # L2 + L4 in parallel
     l2_payload = {
-        "alert_id":       l1["alert_id"],
-        "timestamp":      l1.get("timestamp", ""),
-        "source_ip":      l1.get("source_ip", ""),
-        "dest_ip":        l1.get("dest_ip", ""),
-        "attack_type":    l1.get("attack_type", ""),
-        "anomaly_score":  l1["anomaly_score"],
-        "feature_vector": l1["embedding"],
+        "alert_id":          l1["alert_id"],
+        "timestamp":         l1.get("timestamp", ""),
+        "source_ip":         l1.get("source_ip", ""),
+        "dest_ip":           l1.get("dest_ip", ""),
+        "attack_type":       l1.get("attack_type", ""),
+        "anomaly_score":     l1["anomaly_score"],
+        "feature_vector":    l1["embedding"],          # 768D — for Transformer input
+        "roberta_embedding": l1.get("roberta_embedding") or l1["embedding"],  # 768D explicit carry
+        "cicids_features":   l1.get("cicids_features", []),  # Full CICIDS features for L2
     }
     # FIX 6: Layer 4 now uses 77 features (CICIDS format) - use cicids_features if available
     # Falls back to embedding[:77] padded to 77 dims if cicids_features not present
@@ -506,18 +527,21 @@ async def run_pipeline(alert: Alert):
 
     if l2:
         l3_payload = {
-            "alert_id":          l1["alert_id"],
-            "timestamp":         l1.get("timestamp", ""),
-            "source_ip":         l1.get("source_ip", ""),
-            "destination_ip":    l1.get("dest_ip", ""),
-            "dest_ip":           l1.get("dest_ip", ""),
-            "source_port":       0,
-            "destination_port":  0,
-            "protocol":          "TCP",
-            "severity":          "critical" if l1["anomaly_score"] > 0.7 else "high",
-            "attack_type":       l1.get("attack_type", ""),
-            "feature_vector":    l1["embedding"],
-            "layer2_confidence": l2.get("confidence", 0.5),
+            "alert_id":           l1["alert_id"],
+            "timestamp":          l1.get("timestamp", ""),
+            "source_ip":          l1.get("source_ip", ""),
+            "destination_ip":     l1.get("dest_ip", ""),
+            "dest_ip":            l1.get("dest_ip", ""),
+            "source_port":        0,
+            "destination_port":   0,
+            "protocol":           "TCP",
+            "severity":           "critical" if l1["anomaly_score"] > 0.7 else "high",
+            "attack_type":        l1.get("attack_type", ""),
+            "feature_vector":     l2.get("feature_vector", l1["embedding"]),  # 128D God-Mode from L2
+            "roberta_embedding":  l1.get("roberta_embedding") or l1["embedding"],  # 768D carry-through
+            "mitre_stage":        l2.get("mitre_stage", ""),
+            "predicted_next_stage": l2.get("predicted_next_stage", ""),
+            "layer2_confidence":  l2.get("layer2_confidence", l2.get("confidence", 0.5)),
         }
         l3 = await call_layer(3, "/respond", l3_payload, pipeline_id)
         result["layer3"] = l3
@@ -564,6 +588,45 @@ async def run_pipeline(alert: Alert):
         _log_to_es(result, alert)
         return result
 
+    try:
+        # Utilize the derived predictive/temporal memory from Layer 2
+        l2_stage = l2.get("mitre_stage", "unknown") if l2 else "unknown"
+        l2_next = l2.get("predicted_next_stage", "unknown") if l2 else "unknown"
+        l2_conf = l2.get("confidence", 0.5) if l2 else 0.5
+        
+        ollama_r = await state["http"].post(
+            f"{LAYER_URLS[1][0]}/generate-playbook",
+            json={
+                "prompt": "Generate a 3-step incident response playbook.",
+                "context": {
+                    "attack_type":   l1.get("attack_type"),
+                    "source_ip":     l1.get("source_ip"),
+                    "current_stage": l2_stage,
+                    "predicted_threat": l2_next,
+                    "method":        l1.get("detection_method"),
+                }
+            },
+            timeout=60.0
+        )
+        playbook_text = ollama_r.json().get("response", "")
+        result["playbook"] = {
+            "incident_id":    pipeline_id,
+            "attack_summary": f"{l1.get('attack_type')} from {l1.get('source_ip')}",
+            "steps":          [playbook_text],
+            "predicted_next": l2_next,
+            "confidence":     l2_conf,
+            "source":         "godmode_l2_ollama_generator",
+        }
+    except Exception as e:
+        logger.error(f"Playbook generation failed: {e}")
+        result["playbook"] = {
+            "incident_id": pipeline_id,
+            "attack_summary": f"{l1.get('attack_type')} from {l1.get('source_ip')}",
+            "steps": ["Monitor and wait for SOC intervention."],
+            "predicted_next": "unknown", 
+            "confidence": 0.0
+        }
+=======
     l5_payload = result["final_action"]
     l5 = await call_layer(5, "/explain", l5_payload, pipeline_id)
     if l5 and not l5.get("predicted_next") and l5.get("predicted_threats"):
@@ -600,7 +663,7 @@ async def run_pipeline(alert: Alert):
             metrics.inc("pipeline_playbook_failed")
     else:
         result["playbook"] = l5
-        metrics.inc("pipeline_playbook_l5")
+>>>>>>> 1afdabc8a46d5f181a3da2a175a1925bab46be4f
 
     state["kafka"].send("playbooks", {
         "pipeline_id":   pipeline_id,
@@ -616,12 +679,33 @@ async def run_pipeline(alert: Alert):
         "alert_id":      alert.alert_id,
         "verdict":       result["verdict"],
         "anomaly_score": result["anomaly_score"],
-        "layers_online": {
+            "layers_online": {
             "l1": l1 is not None, "l2": l2 is not None,
             "l3": result["layer3"] is not None,
-            "l4": l4 is not None, "l5": l5 is not None,
+            "l4": l4 is not None,
         }
     })
+
+    # Fire-and-forget: register confirmed attack vector with L1 FAISS attack index.
+    # This feeds the adaptive anomaly loop — future similar traffic gets flagged immediately.
+    roberta_emb = l1.get("roberta_embedding") or l1.get("embedding")
+    if roberta_emb and result.get("verdict") == "ANOMALOUS":
+        async def _send_faiss_feedback():
+            try:
+                await state["http"].post(
+                    f"{LAYER_URLS[1][0]}/feedback/attack",
+                    json={
+                        "embedding":   roberta_emb,
+                        "alert_id":    alert.alert_id,
+                        "attack_type": l1.get("attack_type", "unknown"),
+                        "source_ip":   l1.get("source_ip", ""),
+                    },
+                    timeout=10.0,
+                )
+                logger.info(f"FAISS feedback sent for {alert.alert_id}")
+            except Exception as _fe:
+                logger.warning(f"FAISS feedback failed (non-fatal): {_fe}")
+        asyncio.create_task(_send_faiss_feedback())
 
     _log_to_es(result, alert)
     
