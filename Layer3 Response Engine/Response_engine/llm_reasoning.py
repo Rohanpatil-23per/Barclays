@@ -45,9 +45,10 @@ def _call_ollama_sync(prompt: str) -> str | None:
     """
     try:
         host   = os.environ.get("IMMUNEX_OLLAMA_HOST", "http://localhost:11434")
+        model  = os.environ.get("IMMUNEX_OLLAMA_MODEL", "llama3.1:8b")
         client = ollama_client.Client(host=host)
         response = client.chat(
-            model    = "llama3",
+            model    = model,
             messages = [
                 {
                     "role":    "system",

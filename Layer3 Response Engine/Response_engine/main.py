@@ -63,8 +63,9 @@ _MODEL_PATH      = os.environ.get("IMMUNEX_MODEL_PATH",      "model_weights/duel
 _MGMT_IP         = os.environ.get("IMMUNEX_MGMT_IP",         "127.0.0.1")
 _BACKUP_REGISTRY = os.environ.get("IMMUNEX_BACKUP_REGISTRY", "backups/registry.json")
 _OLLAMA_HOST     = os.environ.get("IMMUNEX_OLLAMA_HOST",     "http://localhost:11434")
-_DRY_RUN         = os.environ.get("IMMUNEX_DRY_RUN",         "true").lower() == "true"
-_PORT            = int(os.environ.get("IMMUNEX_PORT",         "8001"))
+# FIX 7: Default dry_run to FALSE for production (was TRUE - only simulated actions)
+_DRY_RUN         = os.environ.get("IMMUNEX_DRY_RUN",         "false").lower() == "true"
+_PORT            = int(os.environ.get("IMMUNEX_PORT",         "8003"))  # Layer 3 runs on 8003
 _AUDIT_LOG_DIR   = os.environ.get("IMMUNEX_AUDIT_LOG_DIR",   "audit_logs")
 
 # High-impact actions are now evaluated dynamically, all require approval
@@ -86,7 +87,7 @@ async def trigger_l4_retrain(alert: dict, feature_vector: list) -> None:
     Only triggers for novel attack types or critical/high severity.
     Non-blocking — never raises into the main response path.
 
-    Sends 25-dim slice of feature vector that L4 model expects.
+    Sends 77-dim feature vector that L4 model expects (FIX 5/6 upgrade).
     L4 mixes it with rehearsal data and retrains LoRA adapters in background.
     """
     if not _L4_RETRAIN_ENABLE:
@@ -100,13 +101,13 @@ async def trigger_l4_retrain(alert: dict, feature_vector: list) -> None:
     if not is_novel and severity not in ("critical", "high"):
         return
 
-    # L4 expects 25-dim — slice from the 128-dim L3 vector
-    features_25 = feature_vector[:25] if len(feature_vector) >= 25 else (
-        feature_vector + [0.0] * (25 - len(feature_vector))
+    # FIX 7: L4 expects 77-dim — slice from the 128-dim L3 vector or pad if shorter
+    features_77 = feature_vector[:77] if len(feature_vector) >= 77 else (
+        feature_vector + [0.0] * (77 - len(feature_vector))
     )
 
     payload = {
-        "attack_features": [features_25],
+        "attack_features": [features_77],
         "attack_labels":   [1],
         "trigger_source":  f"layer3_auto_{attack_type}",
     }
@@ -305,9 +306,8 @@ async def lifespan(app: FastAPI):
     logger.info("component_ready", component="ActionExecutor", dry_run=_DRY_RUN)
 
     # 4. Playbook generator
-    # FIX 3: Updated model name from "llama3" to "llama3:8b-instruct-q4_0"
-    #        to match the quantised model pulled via `ollama pull`.
-    _generator = PlaybookGenerator(model="llama3:8b-instruct-q4_0", ollama_host=_OLLAMA_HOST)
+    # FIX A: Updated model name to "llama3.1:8b" to match what's actually pulled in Ollama
+    _generator = PlaybookGenerator(model="llama3.1:8b", ollama_host=_OLLAMA_HOST)
     logger.info(
         "component_ready",
         component        = "PlaybookGenerator",

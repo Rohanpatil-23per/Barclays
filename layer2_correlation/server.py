@@ -87,7 +87,9 @@ ATTACK_TYPE_TO_MITRE = {
     "Heartbleed": "Exploitation",
     # Zeus / banking trojans → Execution (lateral movement phase)
     "Zeus Banking Trojan": "Execution",
+    "Zeus_Banking_Trojan": "Execution",
     "Banking Trojan": "Execution",
+    "Banking_Trojan": "Execution",
 }
 
 MITRE_TO_ID = {
@@ -225,7 +227,7 @@ class ModelManager:
 
     # ── BiLSTM ───────────────────────────────────────────────
     def load_bilstm(self,
-                    model_path="models/bilstm/immunex_bilstm_phase3.pt",
+                    model_path="models/bilstm/best_model.pt",
                     scaler_path="models/bilstm/scaler.pkl"):
         try:
             self.bilstm = AttackSequenceBiLSTM(
@@ -420,7 +422,7 @@ async def startup():
     base = os.path.dirname(os.path.abspath(__file__))
     models.load_gatv2(os.path.join(base, "models/gatv2/best_model.pt"))
     models.load_bilstm(
-        os.path.join(base, "models/bilstm/immunex_bilstm_phase3.pt"),
+        os.path.join(base, "models/bilstm/best_model.pt"),
         os.path.join(base, "models/bilstm/scaler.pkl"),
     )
     logger.info(
@@ -479,6 +481,22 @@ async def correlate(req: CorrelateRequest):
             # Also correct graph_attack_prob for display
             if graph_attack_prob < 0.1:
                 graph_attack_prob = 0.87
+
+        # FIX B: If graph says high attack probability, MITRE stage should never be Benign
+        # Override based on attack_type when graph_attack_prob > 0.5
+        if graph_attack_prob > 0.5 and mitre_stage == "Benign":
+            # BiLSTM is defaulting — use graph topology to infer stage
+            if req.attack_type in ["PortScan", "FTP-Patator", "SSH-Patator"]:
+                mitre_stage = "Reconnaissance"
+            elif req.attack_type in ["Backdoor", "Bot", "Infiltration"]:
+                mitre_stage = "Initial_Access"
+            elif req.attack_type in ["Zeus_Banking_Trojan", "Banking Trojan", "Heartbleed"]:
+                mitre_stage = "Execution"
+            elif req.attack_type in ["Web Attack", "DoS", "DDoS", "DoS Hulk", "DoS GoldenEye"]:
+                mitre_stage = "Impact"
+            else:
+                mitre_stage = "Initial_Access"  # safe default for confirmed attacks
+            predicted_next_stage = NEXT_STAGE_MAP.get(mitre_stage, "Exfiltration")
 
         # ── Build graph structure for L3 / dashboard ─────────
         nodes = build_nodes(req.__dict__, mitre_stage)
