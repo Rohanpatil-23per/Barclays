@@ -1,235 +1,190 @@
-# IMMUNEX – Multi-Layer Adaptive Threat Detection & Response System
+# IMMUNEX — Multi-Layer Adaptive Threat Detection & Response System
 
-![IMMUNEX](https://img.shields.io/badge/version-3.0.0-brightgreen) ![Python](https://img.shields.io/badge/python-3.9+-blue) ![License](https://img.shields.io/badge/license-Proprietary-red)
+![Version](https://img.shields.io/badge/version-3.0.0-brightgreen)
+![Python](https://img.shields.io/badge/python-3.9%2B-blue)
+![PyTorch](https://img.shields.io/badge/pytorch-2.5.1-orange)
+![FastAPI](https://img.shields.io/badge/fastapi-0.135-green)
+![License](https://img.shields.io/badge/license-Proprietary-red)
 
-**IMMUNEX** is a production-grade, distributed security threat detection and automated response system designed for financial institutions. It implements a five-layer defense pipeline that detects anomalies, correlates attack chains, generates adaptive responses, maintains immunity learning, and builds long-term threat memory.
+IMMUNEX is a five-layer AI-powered security pipeline built for financial institutions. It ingests raw network logs, detects anomalies, correlates attack chains, decides on a response action, learns from new threats, and builds persistent attacker profiles — all via independent FastAPI microservices coordinated by a central orchestrator.
 
-## 📋 Table of Contents
+Built for the **Barclays Hack-O-Hire** challenge.
 
-- [Quick Start](#quick-start)
-- [Architecture Overview](#architecture-overview)
+---
+
+## Table of Contents
+
+- [Architecture](#architecture)
 - [System Requirements](#system-requirements)
 - [Installation](#installation)
 - [Running IMMUNEX](#running-immunex)
-- [API Endpoints](#api-endpoints)
-- [Configuration](#configuration)
-- [Development](#development)
+- [API Reference](#api-reference)
+- [Environment Variables](#environment-variables)
+- [Project Structure](#project-structure)
+- [Training Custom Models](#training-custom-models)
 - [Troubleshooting](#troubleshooting)
-- [Contributing](#contributing)
+- [Security Notes](#security-notes)
 
 ---
 
-## 🚀 Quick Start
+## Architecture
 
-### Prerequisites
-- **OS**: Linux (Ubuntu 20.04+) or macOS 
-- **Python**: 3.9+
-- **GPU** (recommended): NVIDIA CUDA 12.6+
-- **Docker**: For Kafka, Elasticsearch, Redis
-- **RAM**: 16GB minimum (32GB recommended)
+Each layer is an independent FastAPI service. The **Orchestrator** on port 8000 handles routing, circuit-breaking, rate limiting, and metrics. It fans each alert through all five layers and returns a unified verdict.
 
-### Clone & Setup (5 minutes)
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                      ORCHESTRATOR  :8000                          │
+│        routing · circuit-breaking · metrics · rate-limiting       │
+└──────────────────────────────────────────────────────────────────┘
+         │              │              │              │
+  ┌──────┴───┐   ┌──────┴───┐   ┌──────┴───┐   ┌──────┴───┐
+  │ LAYER 1  │   │ LAYER 2  │   │ LAYER 3  │   │ LAYER 4  │
+  │DETECTION │   │CORRELATION│  │ RESPONSE │   │ IMMUNITY │
+  │  :8001   │   │  :8002   │   │  :8003   │   │  :8004   │
+  │          │   │          │   │          │   │          │
+  │ GATv2 +  │   │ BiLSTM + │   │ DQN +    │   │ LoRA +   │
+  │AutoEncoder│  │Transformer│  │Z3 Prover │   │   EWC    │
+  └──────────┘   └──────────┘   └──────────┘   └──────────┘
+                                       │
+                               ┌───────┴──────┐
+                               │   LAYER 5    │
+                               │THREAT MEMORY │
+                               │    :8005     │
+                               │ LSTM + HMM   │
+                               │   + SQLite   │
+                               └──────────────┘
+```
+
+**Docker services:** Kafka + Zookeeper, Elasticsearch, Redis, Kafka UI  
+**Ollama** is started separately by `start_immunex.sh` (not in Docker Compose)
+
+### Layer Details
+
+**Layer 1 — Detection `:8001`**  
+Identifies anomalous logs in real time using a GATv2 graph neural network and an AutoEncoder for novelty detection. Accepts raw syslog, JSON, or CSV. Outputs an anomaly score (0–1), confidence, embedding, and attack type classification.
+
+**Layer 2 — Correlation `:8002`**  
+Links related alerts into attack chains using a Transformer spatial encoder, BiLSTM narrative tracker, and HMM predictor. Maps chains to MITRE ATT&CK stages and predicts the next likely stage. Operates over 50-alert sequence windows.
+
+**Layer 3 — Response Engine `:8003`**  
+Selects a remediation action (`do_nothing`, `monitor`, `block`, `isolate`) using a Dueling DQN policy. Every proposed action is formally verified by a Z3 theorem prover before execution. High-severity actions require human approval before going live.
+
+**Layer 4 — Immunity `:8004`**  
+Classifies threat severity (Benign / Low / Medium / High / Critical) using a Logistic Regression model with LoRA adapters and EWC (Elastic Weight Consolidation) for continual learning without catastrophic forgetting. Trained on a 77-feature CICIDS 2018 representation — 95.88% accuracy on the held-out test set.
+
+**Layer 5 — Threat Memory `:8005`**  
+Builds persistent attacker profiles using an LSTM + HMM combo backed by SQLite. Tracks attack sequences across sessions and predicts future moves per attacker IP.
+
+---
+
+## System Requirements
+
+| Component | Minimum | Notes |
+|---|---|---|
+| Python | 3.9+ | — |
+| RAM | 16 GB | 32 GB recommended for all layers on one machine |
+| GPU | NVIDIA CUDA 12.6+ | CPU fallback works but is slow |
+| Disk | ~15 GB | pip deps + model weights + Docker volumes |
+| OS | Linux / macOS | Windows needs WSL2 |
+| Docker | any recent version | For Kafka, Elasticsearch, Redis |
+
+> **Windows note:** The startup script uses `python.exe`. On Linux/macOS, edit `start_immunex.sh` and replace `python.exe` with `python3`.
+
+### Tested distributed node setup
+
+The repo ships WireGuard config files for the five machines used during development:
+
+| Config file | GPU | RAM | Role |
+|---|---|---|---|
+| `peer1_fedora.conf` | RTX 4070 | 32 GB | Layer 1 + Orchestrator |
+| `peer2_acer.conf` | RTX 4050 | 16 GB | Layer 2 |
+| `peer3_lenovo.conf` | RTX 3050 | 24 GB | Layer 3 |
+| `peer4_victus.conf` | RTX 2050 | 16 GB | Layer 4 |
+| `peer5_pavilion.conf` | RTX 1650 | 12 GB | Layer 5 |
+
+---
+
+## Installation
+
 ```bash
-git clone https://github.com/yourusername/immunex.git
-cd immunex
-python3 -m venv venv
-source venv/bin/activate
+git clone https://github.com/Rohanpatil-23per/Barclays.git
+cd Barclays
+
+# The startup script expects the venv here
+python3 -m venv ~/.venvs/immunex
+source ~/.venvs/immunex/bin/activate
+
+pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-### Start Full Stack
+Start Docker services (Kafka, Elasticsearch, Redis):
+
 ```bash
-# Terminal 1: Start all services (Docker + all 5 layers)
-./start_immunex.sh
-
-# Terminal 2: Send test alert
-curl -X POST http://localhost:8000/demo/inject
-
-# Check status
-curl http://localhost:8000/health
-```
-
-**Expected output**: All 5 layers online, pipeline processes alert end-to-end.
-
----
-
-## 🏗️ Architecture Overview
-
-IMMUNEX is a **five-layer distributed pipeline**. Each layer is horizontally scalable and can run on separate machines via WireGuard mesh network.
-
-```
-┌────────────────────────────────────────────────────────────────┐
-│                      ORCHESTRATOR (8000)                        │
-│  - Request routing, circuit breaking, metrics, rate limiting   │
-└────────────────────────────────────────────────────────────────┘
-        ↓              ↓              ↓              ↓
-┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐
-│   LAYER 1    │ │   LAYER 2    │ │   LAYER 3    │ │   LAYER 4    │
-│ DETECTION    │ │ CORRELATION  │ │ RESPONSE     │ │ IMMUNITY     │
-│  Port 8001   │ │  Port 8002   │ │  Port 8003   │ │  Port 8004   │
-│              │ │              │ │              │ │              │
-│ Anomaly      │ │ Attack Chain │ │ DQN Decision │ │ LoRA+EWC     │
-│ Detection    │ │ Correlation  │ │ Generation   │ │ Adaptation   │
-│ GATv2 +      │ │ BiLSTM +     │ │ Z3 Safety    │ │ 77-feature   │
-│ AutoEncoder  │ │ HMM History  │ │ Verification │ │ Classifier   │
-└──────────────┘ └──────────────┘ └──────────────┘ └──────────────┘
-                                          ↓
-                                ┌──────────────────┐
-                                │   LAYER 5        │
-                                │ THREAT MEMORY    │
-                                │   Port 8005      │
-                                │                  │
-                                │ LSTM+HMM History │
-                                │ SQLite Chains    │
-                                │ Attacker Profiles│
-                                └──────────────────┘
-```
-
-### Layer 1: Detection (Port 8001)
-- **Purpose**: Identify anomalous logs in real-time
-- **Models**: GATv2 graph neural network + AutoEncoder novelty detection
-- **Input**: Raw logs (syslog, JSON, CSV, etc.)
-- **Output**: Anomaly score (0-1), confidence, embedding, attack type
-- **Throughput**: 10k+ logs/sec (single GPU)
-
-### Layer 2: Correlation (Port 8002)
-- **Purpose**: Link related alerts into attack chains
-- **Models**: Transformer Spatial Reasoning + BiLSTM Narrative Tracker + HMM Predictor
-- **Input**: L1 anomaly results + embedding
-- **Output**: Attack chain ID, MITRE ATT&CK stage, confidence, predicted next stage
-- **Features**: Watermarking, temporal reordering, 50-alert sequence windows
-
-### Layer 3: Response (Port 8003)
-- **Purpose**: Decide optimal remediation actions
-- **Models**: Dueling DQN policy + Z3 theorem prover for safety verification
-- **Input**: L2 attack graph + chain history
-- **Output**: Action (do_nothing, isolate, block, monitor), confidence, rationale
-- **Features**: Human-in-the-loop approval gate, compliance checks (RBI, GDPR, DORA)
-
-### Layer 4: Immunity (Port 8004)
-- **Purpose**: Learn and adapt to new threats
-- **Models**: Logistic Regression with LoRA adapters + EWC (Elastic Weight Consolidation)
-- **Input**: Labeled incident data (77-dim CICIDS features)
-- **Output**: Threat severity classification (Benign, Low, Medium, High, Critical)
-- **Features**: Continual learning without catastrophic forgetting, 95.88% accuracy on master dataset
-
-### Layer 5: Threat Memory (Port 8005)
-- **Purpose**: Build attacker profiles and predict future moves
-- **Models**: LSTM + HMM state progression + SQLite persistence
-- **Input**: Confirmed attack chains
-- **Output**: Predicted next stage, risk escalation, attacker IP profile
-- **Features**: Cross-session attack tracking, persistence across restarts
-
----
-
-## 💻 System Requirements
-
-| Component | Requirement | Notes |
-|-----------|-------------|-------|
-| CPU | 8+ cores | L1/L2 inference parallelizable |
-| RAM | 32GB | Models: L1=2GB, L2=1.5GB, L4=1.2GB, others=0.5GB each |
-| Storage | 100GB | Weights + datasets + logs |
-| GPU | NVIDIA RTX 2060+ | CUDA 12.6, CuDNN 8.6+ |
-| Network | 1Gbps+ | For distributed mesh nodes |
-| OS | Linux/macOS | Windows requires WSL2 |
-
-### Tested Configurations
-- ✅ RTX 4070 + Ryzen 7 5700X + 64GB RAM (primary)
-- ✅ RTX 4050 Laptop + 32GB RAM (Layer 2)
-- ✅ RTX 3050 + 32GB RAM (Layer 3)
-- ✅ RTX 2050 Laptop + 16GB RAM (Layer 4)
-- ✅ RTX 1650 Laptop + 16GB RAM (Layer 5)
-
----
-
-## 📦 Installation
-
-### 1. Clone Repository
-```bash
-git clone https://github.com/yourusername/immunex.git
-cd immunex
-```
-
-### 2. Create Virtual Environment
-```bash
-python3.9 -m venv venv
-source venv/bin/activate  # Linux/macOS
-# or: venv\Scripts\activate  # Windows
-```
-
-### 3. Install Dependencies
-```bash
-pip install --upgrade pip setuptools wheel
-pip install -r requirements.txt
-
-# Optional: GPU support
-pip install torch==2.2.0+cu121 torchvision torchaudio -f https://download.pytorch.org/whl/torch_stable.html
-```
-
-### 4. Start Docker Services
-```bash
-docker compose up -d  # Starts Kafka, Elasticsearch, Redis, Ollama
-docker ps  # Verify all services running
-```
-
-### 5. Download Pre-trained Models
-Models are auto-downloaded on first run, or manually:
-```bash
-python layer1_detection/model.py --download-models
-python layer2_correlation/train_bilstm.py --load-pretrained
+docker compose up -d
+docker ps   # verify all containers are running
 ```
 
 ---
 
-## 🎯 Running IMMUNEX
+## Running IMMUNEX
 
-### Single-Machine Setup (All Layers Local)
+### Single machine
+
 ```bash
 ./start_immunex.sh
 ```
-This script:
-1. Kills previous processes
-2. Starts Docker (Kafka, ES, Redis)
-3. Starts all 5 layers sequentially
-4. Starts Orchestrator on port 8000
-5. Outputs health status
 
-**Logs**: All layer logs in `./logs/`
+The script will:
+1. Kill any processes on ports 8000–8005
+2. Wipe and restart Docker services
+3. Start Ollama (skips if already running)
+4. Start all five layers one by one, waiting for each `/health` endpoint
+5. Start the Orchestrator on port 8000
+6. Print a live health summary
 
-### Distributed Setup (Multi-Machine)
 ```bash
-# Machine 1 (your RTX 4070)
-./start_immunex.sh
-
-# Machine 2 (Acer w/ RTX 4050)
-LAYER2_URL=http://10.0.0.2:8002 ./start_orchestrator.sh
-
-# Configure in Orchestrator
-export LAYER2_URL=http://10.0.0.2:8002
-export LAYER3_URL=http://10.0.0.3:8003
-export LAYER4_URL=http://10.0.0.4:8004
-export LAYER5_URL=http://10.0.0.5:8005
+./stop_immunex.sh    # stop everything
+./check_mesh.sh      # verify WireGuard mesh connectivity
 ```
 
-### Stop All Services
+Logs for each layer are written to `./logs/`.
+
+### Distributed mode
+
+Set the remote URLs before running the startup script. Any layer whose URL points to `localhost` is started locally; the rest are assumed to already be running on their respective machines.
+
 ```bash
-./stop_immunex.sh
+LAYER2_URL=http://10.0.0.2:8002 \
+LAYER3_URL=http://10.0.0.3:8003 \
+LAYER4_URL=http://10.0.0.4:8004 \
+LAYER5_URL=http://10.0.0.5:8005 \
+./start_immunex.sh
+```
+
+To start a single layer manually on a remote node:
+
+```bash
+source ~/.venvs/immunex/bin/activate
+uvicorn layer2_correlation.server:app --host 0.0.0.0 --port 8002
 ```
 
 ---
 
-## 🔌 API Endpoints
+## API Reference
 
-### Orchestrator (Port 8000)
+### Orchestrator `:8000`
 
-#### Health Check
-```bash
+#### Health check
+```http
 GET /health
-# Response: {status: "ok", layers: {1: true, 2: true, ...}}
+```
+```json
+{ "status": "ok", "layers": { "1": true, "2": true, "3": true, "4": true, "5": true } }
 ```
 
-#### Process Alert
-```bash
+#### Run an alert through the full pipeline
+```http
 POST /pipeline/run
 Content-Type: application/json
 
@@ -241,8 +196,8 @@ Content-Type: application/json
   "timestamp": "2026-05-24T10:30:00Z",
   "severity": "high"
 }
-
-# Response:
+```
+```json
 {
   "pipeline_id": "uuid-xxx",
   "verdict": "ANOMALOUS",
@@ -254,267 +209,172 @@ Content-Type: application/json
 }
 ```
 
-#### Demo Inject
-```bash
+#### Inject demo alerts
+```http
 POST /demo/inject
-# Injects 5 pre-built test alerts, processes through full pipeline
 ```
+Runs five pre-built test scenarios through the full pipeline.
 
-#### Get Metrics
-```bash
+#### Metrics
+```http
 GET /metrics
-# Returns: throughput, latency (p50/p95/p99), error rates
 ```
+Returns throughput, latency percentiles (p50/p95/p99), and per-layer error rates.
 
-### Layer 1 (Detection)
-```bash
+---
+
+### Layer 1 — Detection `:8001`
+
+```http
 POST /detect
-{
-  "log": "Raw syslog or JSON log",
-  "source_hint": "syslog|json|csv"
-}
+{ "log": "<raw syslog or JSON>", "source_hint": "syslog|json|csv" }
 
 POST /detect/batch
-{
-  "logs": ["log1", "log2", ...],
-  "batch_size": 32
-}
+{ "logs": ["log1", "log2", ...], "batch_size": 32 }
 
 POST /ingest/batch
-{
-  "logs": [...],
-  "run_full_pipeline": true
-}
+{ "logs": [...], "run_full_pipeline": true }
 ```
 
-### Layer 2 (Correlation)
-```bash
+### Layer 2 — Correlation `:8002`
+
+```http
 POST /correlate
-{
-  "alerts": [l1_result_1, l1_result_2, ...],
-  "window_size": 50
-}
+{ "alerts": [<l1_result>, ...], "window_size": 50 }
 ```
 
-### Layer 3 (Response)
-```bash
+### Layer 3 — Response Engine `:8003`
+
+```http
 POST /decide
-{
-  "attack_graph": {...},
-  "feature_vector": [...]
-}
+{ "attack_graph": {}, "feature_vector": [...] }
 
 POST /execute
-{
-  "action_index": 0,
-  "dry_run": false
-}
+{ "action_index": 0, "dry_run": true }
 ```
 
-### Layer 4 (Immunity)
-```bash
+### Layer 4 — Immunity `:8004`
+
+```http
 POST /classify
-{
-  "features": [77-dimensional array]
-}
+{ "features": [<77-dimensional CICIDS feature vector>] }
 
 POST /retrain
-{
-  "dataset": "path/to/dataset.pt",
-  "epochs": 10,
-  "learning_rate": 0.001
-}
+{ "dataset": "path/to/dataset.pt", "epochs": 10, "learning_rate": 0.001 }
 ```
 
-### Layer 5 (Threat Memory)
-```bash
-GET /chains
-# List all active attack chains
+### Layer 5 — Threat Memory `:8005`
 
-GET /chain/{chain_id}
-# Full history of a specific chain
-
-GET /attacker/{ip}
-# Attacker profile by IP address
-
+```http
+GET  /chains                 # list all active attack chains
+GET  /chain/{chain_id}       # full history for a chain
+GET  /attacker/{ip}          # attacker profile by IP
 POST /chain/create
-{
-  "target_ip": "10.0.0.50",
-  "first_observation": {...}
-}
+{ "target_ip": "10.0.0.50", "first_observation": {} }
 ```
 
 ---
 
-## ⚙️ Configuration
+## Environment Variables
 
-### Environment Variables
 ```bash
 # Orchestrator
-export ORCHESTRATOR_TIMEOUT=30.0
-export RATE_LIMIT_RPS=100
-export RATE_LIMIT_BURST=200
-export LOG_FORMAT=json  # json or standard
+ORCHESTRATOR_TIMEOUT=30.0
+RATE_LIMIT_RPS=100
+RATE_LIMIT_BURST=200
+LOG_FORMAT=json                  # json | standard
 
-# Per-Layer Timeouts
-export L1_TIMEOUT=15.0
-export L2_TIMEOUT=20.0
-export L3_TIMEOUT=30.0
-export L4_TIMEOUT=15.0
-export L5_TIMEOUT=20.0
+# Per-layer timeouts
+L1_TIMEOUT=15.0
+L2_TIMEOUT=20.0
+L3_TIMEOUT=30.0
+L4_TIMEOUT=15.0
+L5_TIMEOUT=20.0
 
-# Layer URLs (for distributed setup)
-export LAYER1_URL=http://localhost:8001
-export LAYER2_URL=http://localhost:8002
-export LAYER3_URL=http://localhost:8003
-export LAYER4_URL=http://localhost:8004
-export LAYER5_URL=http://localhost:8005
+# Layer URLs — set these to enable distributed mode
+LAYER1_URL=http://localhost:8001
+LAYER2_URL=http://localhost:8002
+LAYER3_URL=http://localhost:8003
+LAYER4_URL=http://localhost:8004
+LAYER5_URL=http://localhost:8005
 
-# Database
-export ELASTICSEARCH_HOST=localhost:9200
-export REDIS_HOST=localhost:6379
-export KAFKA_BROKERS=localhost:9092
+# Infrastructure
+ELASTICSEARCH_HOST=localhost:9200
+REDIS_HOST=localhost:6379
+KAFKA_BROKERS=localhost:9092
 
 # GPU
-export CUDA_VISIBLE_DEVICES=0
-export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+CUDA_VISIBLE_DEVICES=0
+PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 ```
 
-### Docker Compose
-Edit `docker-compose.yml`:
-```yaml
-services:
-  kafka:
-    image: confluentinc/cp-kafka:latest
-    environment:
-      KAFKA_BROKERS: kafka:9092
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.0.0
-  redis:
-    image: redis:7-alpine
-  ollama:
-    image: ollama/ollama:latest
-```
-
-### Model Paths
-```
-layer1_detection/models/
-├── faiss_index.bin
-├── isolation_forest.pkl
-└── layer1_scaler.pkl
-
-layer2_correlation/models/
-├── immunex_bilstm_phase3.pt
-└── hmm_transition_counts.npy
-
-layer4_immunity/models/
-├── lora_model_ewc.pt
-└── feature_scaler.pkl
-
-Layer5_Threat Memory/
-├── immunex_lstm_final.pt
-└── immunex_hmm.pkl
-```
+Store secrets in a `.env` file — it's already in `.gitignore`.
 
 ---
 
-## 🛠️ Development
+## Project Structure
 
-### Project Structure
 ```
-immunex/
-├── orchestrator/          # Central coordination
-│   ├── server.py         # FastAPI app
-│   ├── ingest_api.py     # High-throughput ingest
-│   └── security_status.py
-├── layer1_detection/      # Anomaly detection
+Barclays/
+├── orchestrator/               # Central coordinator (FastAPI)
 │   ├── server.py
-│   ├── model.py
-│   ├── inference.py
-│   └── requirements.txt
-├── layer2_correlation/    # Attack chain correlation
+│   ├── ingest_api.py
+│   └── security_status.py
+├── layer1_detection/           # Anomaly detection
+│   ├── server.py
+│   ├── model.py                # GATv2 + AutoEncoder
+│   └── inference.py
+├── layer2_correlation/         # Attack chain correlation
 │   ├── server.py
 │   ├── gat_model.py
 │   ├── bilstm_model.py
 │   └── hmm_predictor.py
-├── Layer3 Response Engine/ # DQN-based response
+├── Layer3 Response Engine/     # DQN response + Z3 verification
 │   └── Response_engine/
 │       ├── main.py
 │       ├── dqn_model.py
 │       └── z3_verifier.py
-├── layer4_immunity/       # Continual learning
+├── layer4_immunity/            # Continual learning (LoRA + EWC)
 │   ├── server.py
 │   ├── train_77_features.py
 │   └── lora_retrain.py
-├── Layer5_Threat Memory/  # Temporal threat tracking
+├── Layer5_Threat Memory/       # Temporal attacker tracking
 │   ├── server.py
 │   ├── lstm_predictor.py
 │   └── hmm_dwell_times.json
-├── shared/               # Common utilities
-│   ├── normalizer.py     # Log normalization
-│   ├── schemas.py        # Pydantic models
+├── shared/                     # Common utilities
+│   ├── normalizer.py
+│   ├── schemas.py
 │   ├── kafka_client.py
 │   └── redis_client.py
+├── CICIDS2018/                 # Training dataset
+├── certs/                      # mTLS certificates (Layer 5)
+├── logs/                       # Runtime logs (gitignored)
+├── tests/
 ├── docker-compose.yml
 ├── requirements.txt
-└── start_immunex.sh
+├── start_immunex.sh
+├── stop_immunex.sh
+└── check_mesh.sh
 ```
 
-### Adding a New Feature
+---
 
-1. **Create feature branch**
-   ```bash
-   git checkout -b feature/my-feature
-   ```
+## Training Custom Models
 
-2. **Implement in appropriate layer**
-   ```python
-   # Example: Add new detection method in Layer 1
-   # layer1_detection/my_detector.py
-   def detect_anomaly(log):
-       # Your implementation
-       pass
-   ```
-
-3. **Add tests**
-   ```bash
-   python -m pytest tests/test_my_detector.py -v
-   ```
-
-4. **Commit & push**
-   ```bash
-   git add .
-   git commit -m "feat: add my-feature to layer 1"
-   git push origin feature/my-feature
-   ```
-
-### Running Tests
-```bash
-# All tests
-pytest tests/ -v
-
-# Specific layer
-pytest tests/test_layer1.py -v
-
-# With coverage
-pytest tests/ --cov=orchestrator --cov=layer1_detection
-```
-
-### Training Custom Models
-
-#### Layer 1: Train Isolation Forest
+### Layer 1 — Isolation Forest
 ```bash
 cd layer1_detection
 python train_isolation_forest.py --dataset data/cicids2018.csv --epochs 50
 ```
 
-#### Layer 2: Train BiLSTM
+### Layer 2 — BiLSTM
 ```bash
 cd layer2_correlation
 python train_bilstm.py --dataset data/l2_seq_dataset.pt --epochs 30 --batch-size 64
 ```
 
-#### Layer 4: Fine-tune on Custom Data
+### Layer 4 — LoRA fine-tune on custom data
 ```bash
 cd layer4_immunity
 python train_77_features.py \
@@ -526,99 +386,58 @@ python train_77_features.py \
 
 ---
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
-### Layer Not Starting
+**A layer isn't starting**
 ```bash
-# Check logs
 tail -f logs/layer1.log
 
-# Restart single layer
-python -m uvicorn layer1_detection.server:app --reload --port 8001
+# Restart a single layer manually
+uvicorn layer1_detection.server:app --reload --port 8001
 ```
 
-### GPU Out of Memory
+**CUDA out of memory**
 ```bash
-# Reduce batch size
 export L1_BATCH_SIZE=16
 export L2_BATCH_SIZE=8
-
-# Or check GPU usage
 nvidia-smi --query-gpu=memory.used,memory.total --format=csv
 ```
 
-### Kafka Connection Failed
+**Kafka connection refused**
 ```bash
-# Check if running
 docker ps | grep kafka
-
-# Restart Docker services
-docker compose restart kafka elasticsearch redis
+docker compose restart kafka zookeeper
 ```
 
-### Model Loading Error
+**Elasticsearch not ready**
 ```bash
-# Re-download models
-rm layer*/models/*
-python -c "import torch; torch.hub.load(...)"
-
-# Or manually download from S3
-aws s3 cp s3://immunex-models/weights/ . --recursive
+curl http://localhost:9200/_cluster/health
+docker compose restart elasticsearch
 ```
 
-### High Latency / Slow Inference
+**High latency**
 ```bash
-# Profile performance
+nvidia-smi                               # check GPU utilisation
 python -m cProfile -s cumtime layer1_detection/inference.py
-
-# Check if all GPU memory allocated
-nvidia-smi
-
-# Run in single-threaded mode if contested
-export OMP_NUM_THREADS=1
-export CUDA_LAUNCH_BLOCKING=1
+export CUDA_LAUNCH_BLOCKING=1            # if memory is being contested
 ```
 
 ---
 
-## 📊 Performance Benchmarks
+## Security Notes
 
-| Metric | Single GPU | 5-Layer Pipeline |
-|--------|-----------|------------------|
-| L1 Throughput | 10k logs/sec | 2-5k logs/sec |
-| L1 Latency (p99) | 50ms | 150ms (total) |
-| L2 Latency | 30ms/batch | 80ms |
-| L3 Decision Time | 20ms | 50ms |
-| Memory (all layers) | ~7GB | ~8GB |
-
-**Note**: Distributed across GPU nodes achieves 40k+ logs/sec aggregate.
+- **No hardcoded secrets** — use a `.env` file (already in `.gitignore`)
+- **Layer 3 dry-run** — `dry_run=true` by default; set to `false` in production only — it executes real network actions
+- **Human-in-the-loop** — high-severity `block` and `isolate` actions require manual approval before execution
+- **mTLS on Layer 5** — inter-node traffic uses mutual TLS; certs live in `certs/`. Single-machine mode skips the TLS flags automatically
+- **Audit logging** — all pipeline decisions are persisted to Elasticsearch
 
 ---
 
-## 📝 License
+## Dataset
 
-Proprietary. All rights reserved by Barclays.
-
----
-
-## 👥 Support & Contributing
-
-For issues, security concerns, or feature requests:
-1. Check existing issues: `https://github.com/yourusername/immunex/issues`
-2. Contact the IMMUNEX team: `immunex-team@barclays.com`
-3. Submit PRs following the contribution guidelines
+Layer 4 is trained and evaluated on the **CICIDS 2018** intrusion detection dataset with a 77-feature representation. Raw CSVs and pre-processed tensors are under `CICIDS2018/`.
 
 ---
 
-## 🔐 Security Notes
-
-- **Never commit credentials** – use `.env` (in `.gitignore`)
-- **Model weights are binary** – handle carefully, don't expose paths
-- **Production mode**: L3 has `DRY_RUN=false` (executes real actions)
-- **HITL approval**: All high-severity actions require human review
-- **Audit logging**: All decisions logged to Elasticsearch for compliance (RBI, GDPR, DORA)
-
----
-
-**Last Updated**: May 24, 2026  
-**Version**: 3.0.0
+*Barclays Hack-O-Hire 2026 — Team PuranPoli Enjoyers*
